@@ -71,7 +71,7 @@ int main( int argc, char *argv[] )  {
     /*
      * Questions:
      * Which headers to use, and which conditional headers should we add
-     * how should we send a get request? - curl?
+     * how should we send a get request? - curl? / do we need to write up client file (socket, connect send request etc.)
      * for persistant do we need to make a c client so the connection doesnt close
      * do we need thread for simple server as piazza post said we need to handle concurrent requests
      * If we have HTTP/1.1 do we downgrade to 1.0 and vice versa (1.0 upgrade to 1.1)?
