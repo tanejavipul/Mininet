@@ -5,7 +5,10 @@ FLAGS = -Wall -Werror -std=c99
 # https://stackoverflow.com/questions/653807/determining-c-executable-name
 # https://stackoverflow.com/questions/3220277/what-do-the-makefile-symbols-and-mean
 
-SimpleServer: SimpleServer.c
+%.o: %.c
+	gcc ${CFLAGS} -c $<
+
+SimpleServer: SimpleServer.o Helper.o
 	gcc ${FLAGS} -o $@ $<
 
 PersistentServer: PersistentServer.c
@@ -14,10 +17,13 @@ PersistentServer: PersistentServer.c
 PipelinedServer: PipelinedServer.c
 	gcc ${FLAGS} -o $@ $<
 
-all: SimpleServer PersistentServer PipelinedServer
+test: Test.o Helper.o
+	gcc ${FLAGS} -o $@ $<
+
+all: clean SimpleServer PersistentServer PipelinedServer test
 
 clean:
-	rm -f SimpleServer PersistentServer PipelinedServer
+	rm -f SimpleServer PersistentServer PipelinedServer *.o test
 
 
 
