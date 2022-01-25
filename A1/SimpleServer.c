@@ -52,8 +52,9 @@ int main( int argc, char *argv[] )  {
     char buffer[30000];
     read( new_socket , buffer, 30000);
     close(new_socket);
-        printf("testing\n");
+    printf("testing\n");
     get_header(&request, buffer);
+    printf("IN MAIN FUNCTION: %s\n",request.filename);
 
 }
 
@@ -66,8 +67,5 @@ int main( int argc, char *argv[] )  {
      * - for persistant do we need to make a c client so the connection doesnt close
      * - do we need thread for simple server as piazza post said we need to handle concurrent requests
      * - If we have HTTP/1.1 do we downgrade to 1.0 and vice versa (1.0 upgrade to 1.1)?
-     *
-     *
-     *
      *
      */

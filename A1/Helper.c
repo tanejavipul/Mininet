@@ -4,7 +4,6 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <unistd.h>
-
 #include <string.h>
 
 //Request
@@ -13,25 +12,31 @@ char *END_OF_LINE = "\r\n";
 char *GET = "GET";
 char *HOST = "Host:";
 char *USER_AGENT = "User-Agent:";
-char *ACCEPT = "Accept:";
+char *ACCEPT = "Accept: ";
 char *WHITE_SPACE = " ";
+char *ACCEPT_EMPTY = "*/*";
 
 //Response
 char *OK = "200";
 char *NOT_FOUND = "404";
+char *BAD_REQUEST = "400";
 
 
 struct Request {
-    char* get;
+    char* filename;
     char* accept;
 };
 
-char* find_str_pointer(char* big, char* small) {
+//struct Response {
+//
+//};
+
+char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
     char* x = strstr(big,small);
     return x;
 }
 
-int find_str_index(char* big, char* small) {
+int find_str_index(char* big, char* small) { //problems
     char* x = strstr(big,small);
     return x-big;
 }
@@ -47,8 +52,10 @@ char* get_root_filename_path(char* root_path, char* filename){
 
 
 //char* get_filename(char* get_request){
-//
-//
+//    char output[1000];
+//    int x=4;
+//    while (x<strlen(get_request)) {
+//    }
 //}
 
 
@@ -68,16 +75,24 @@ void get_header(struct Request *req, char* header) {
         //PULL FILENAME
         if(find_str_pointer(extract_token, GET)!=NULL)
         {
-
-            printf("inside full filename: %s     %lu\n", extract_token, strlen(extract_token));
-            printf("GETTING GET %p\n", find_str_pointer(extract_token, GET));
+            req->filename = malloc(sizeof(char)*(strlen(extract_token)));
+            char *get_strtok_pointer = NULL;
+            char *get_token = strtok_r(extract_token, " ", &get_strtok_pointer);
+            get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
+            strcpy(req->filename, get_token);
         }
 
-//        //More Headers
-//        if(){
-//
-//        }
-
+        if(find_str_pointer(extract_token, ACCEPT)!=NULL)
+        {
+            //check if accept field is not empty
+            if(find_str_pointer(extract_token, ACCEPT_EMPTY)!=NULL) { //TODO NEED TO FIX AND TEST
+                //req->filename = malloc(sizeof(char)*(strlen(extract_token)));
+                char *accept_strtok_pointer = NULL;
+                char *accept_token = strtok_r(extract_token, " ", &accept_strtok_pointer);
+                //accept_token = strtok_r(NULL, ACCEPT, &accept_strtok_pointer);
+                strcpy(req->accept, accept_token);
+            }
+        }
 
         printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
