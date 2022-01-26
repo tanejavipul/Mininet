@@ -51,15 +51,34 @@ struct Response {
 //    char* data;
 };
 
-char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
-    char* x = strstr(big,small);
-    return x;
+
+
+
+
+/*
+ * Returns 0 if word found in string else -1
+ */
+int contains(char* string, int string_len, char* word, int word_len) {
+    int x = 0;
+    int count = 0;
+    while (x < string_len){
+        if(string[x] == word[count]){
+            count++;
+        }
+        else{
+            count=0;
+        }
+        if(count==word_len){
+            return 0;
+        }
+        x++;
+    }
+    if(count==word_len){
+        return 0;
+    }
+    return -1;
 }
 
-int find_str_index(char* big, char* small) { //problems
-    char* x = strstr(big,small);
-    return x-big;
-}
 
 char* get_root_filename_path(char* root_path, char* filename){
     int rootlen = strlen(root_path);
@@ -71,20 +90,12 @@ char* get_root_filename_path(char* root_path, char* filename){
 }
 
 
-//char* get_filename(char* get_request){
-//    char output[1000];
-//    int x=4;
-//    while (x<strlen(get_request)) {
-//    }
-//}
-
-
 //    get_header(&request, buffer);
 void get_header(struct Request *req, char* header) {
     printf("INSIDER GET_HEADER\n");
 
     char *main_strtok_pointer = NULL;
-    char *extract_token = malloc(sizeof(char)*3000);
+    char *extract_token = malloc(sizeof(char)*10000);
 
     char *token = strtok_r(header, END_OF_LINE, &main_strtok_pointer); //DO NOT USE strtok
 
@@ -93,7 +104,7 @@ void get_header(struct Request *req, char* header) {
         strcpy(extract_token,token);
 
         //PULL FILENAME
-        if(find_str_pointer(extract_token, GET)!=NULL)
+        if(contains(extract_token, strlen(extract_token), GET, strlen(GET))==0)
         {
             req->filename = malloc(sizeof(char)*(strlen(extract_token)));
             char *get_strtok_pointer = NULL;
@@ -102,15 +113,22 @@ void get_header(struct Request *req, char* header) {
             strcpy(req->filename, get_token);
         }
 
-        if(find_str_pointer(extract_token, ACCEPT)!=NULL)
+        //PULL ACCEPT
+        if(contains(extract_token, strlen(extract_token), ACCEPT, strlen(ACCEPT))==0)
         {
             //check if accept field is not empty
-            if(find_str_pointer(extract_token, ACCEPT_EMPTY)!=NULL) { //TODO NEED TO FIX AND TEST
-                //req->filename = malloc(sizeof(char)*(strlen(extract_token)));
+            //TODO NEED TO FIX AND TEST
+            if(contains(extract_token, strlen(extract_token), ACCEPT_EMPTY, strlen(ACCEPT_EMPTY))!=0) {
+                req->accept = malloc(sizeof(char)*(strlen(extract_token)));
                 char *accept_strtok_pointer = NULL;
                 char *accept_token = strtok_r(extract_token, " ", &accept_strtok_pointer);
                 //accept_token = strtok_r(NULL, ACCEPT, &accept_strtok_pointer);
                 strcpy(req->accept, accept_token);
+                int x = 0;
+                while (x< strlen(extract_token)){
+                    printf("char:__%c__",extract_token[x+4]);
+                    x++;
+                }
             }
         }
 
@@ -119,6 +137,11 @@ void get_header(struct Request *req, char* header) {
     }
     free(extract_token);
 }
+
+
+
+
+
 
 void generate_response(struct Response *r) {
     //Status Line (1)
@@ -133,8 +156,34 @@ void generate_response(struct Response *r) {
     printf("Contents of structure are %s\n", status_line);
 
     free(status_line);
-
 }
+
+
+void free_memory(struct Request *req) {
+    if (req->accept != NULL) {
+        free(req->accept);
+    }
+    if (req->filename != NULL) {
+        free(req->filename);
+    }
+}
+
+
+
+
+
+
+    // DEPRECATED CODE
+    char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
+        char* x = strstr(big,small);
+        return x;
+    }
+
+    int find_str_index(char* big, char* small) { //problems
+        char* x = strstr(big,small);
+        return x-big;
+    }
+
 
 
 
@@ -146,6 +195,7 @@ void generate_response(struct Response *r) {
 
 
 /*
+    // SOME EXAMPLE USE OF CODE - TEMP
     if ((new_socket = accept(server, NULL, NULL))<0) //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
     {
         perror("accept");
@@ -161,7 +211,4 @@ void generate_response(struct Response *r) {
     printf("test %p\n",strstr(buffer,END_OF_HEADER));
     char* x = strstr(buffer,END_OF_HEADER)-(sizeof(char)*2);
     printf("testing %d\n", find_str_index(buffer,END_OF_HEADER));
-
-
-
  */
