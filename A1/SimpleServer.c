@@ -49,12 +49,32 @@ int main( int argc, char *argv[] )  {
         perror("accept");
         exit(EXIT_FAILURE);
     }
-    char buffer[30000];
-    read( new_socket , buffer, 30000);
+//    char buffer[30000];
+//    read( new_socket , buffer, 30000);
+//
+//    printf("testing\n");
+//    get_header(&request, buffer);
+//    printf("IN MAIN FUNCTION: %s\n",request.filename);
+
+    //Example of sending a HTTP response
+    char *reply =
+            "HTTP/1.1 200 OK\n"
+            "Date: Thu, 19 Feb 2009 12:27:04 GMT\n"
+            "Server: Apache/2.2.3\n"
+            "Last-Modified: Wed, 18 Jun 2003 16:05:58 GMT\n"
+            "ETag: \"56d-9989200-1132c580\"\n"
+            "Content-Type: text/html\n"
+            "Content-Length: 15\n"
+            "Accept-Ranges: bytes\n"
+            "Connection: close\n"
+            "\n"
+            "data of file being sent over\n";
+
+
+//    struct Response r = { "HTTP/1.0", OK};
+//    generate_response(&r);
+    send(new_socket, reply, strlen(reply), 0);
     close(new_socket);
-    printf("testing\n");
-    get_header(&request, buffer);
-    printf("IN MAIN FUNCTION: %s\n",request.filename);
 
 }
 

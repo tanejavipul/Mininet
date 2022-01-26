@@ -5,6 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/types.h>
 
 //Request
 char *END_OF_HEADER = "\r\n\r\n";
@@ -17,9 +18,10 @@ char *WHITE_SPACE = " ";
 char *ACCEPT_EMPTY = "*/*";
 
 //Response
-char *OK = "200";
-char *NOT_FOUND = "404";
-char *BAD_REQUEST = "400";
+char *OK = "200 OK";
+char *NOT_FOUND = "404 NOT FOUND";
+char *BAD_REQUEST = "400 BAD_REQUEST";
+const char *VERSION_NOT_SUPPORTED = "505 HTTP VERSION NOT SUPPORTED";
 
 
 struct Request {
@@ -27,9 +29,27 @@ struct Request {
     char* accept;
 };
 
-//struct Response {
-//
-//};
+
+struct Response {
+    //Example Response
+    //HTTP/1.1 200 OK\r\n
+    //Date: Sun, 26 Sep 2010 20:09:20 GMT\r\n
+    //Server: Apache/2.0.52 (CentOS)\r\n
+    //Last-Modified: Tue, 30 Oct 2007 17:00:02
+    //    GMT\r\n
+    //ETag: "17dc6-a5c-bf716880"\r\n
+    //Accept-Ranges: bytes\r\n
+    //Content-Length: 2652\r\n
+    //Keep-Alive: timeout=10, max=100\r\n
+    //Connection: Keep-Alive\r\n
+    //Content-Type: text/html;
+    //    charset=ISO-8859-1\r\n
+    //\r\n
+    //data of file you are returning
+    char* version;
+    char* response;
+//    char* data;
+};
 
 char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
     char* x = strstr(big,small);
@@ -98,6 +118,22 @@ void get_header(struct Request *req, char* header) {
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }
     free(extract_token);
+}
+
+void generate_response(struct Response *r) {
+    //Status Line (1)
+
+    char * status_line = (char *) malloc(1 + 1 + 2 + strlen(r->version)+ strlen(r->response) ); //space, /r/n, and string terminator??
+
+    sprintf(status_line, "%s %s", r->version, r->response);
+    strcat(status_line, END_OF_LINE);
+    printf("Contents of structure are %s\n", r->version);
+    printf("Contents of structure are %s\n", r->response);
+
+    printf("Contents of structure are %s\n", status_line);
+
+    free(status_line);
+
 }
 
 
