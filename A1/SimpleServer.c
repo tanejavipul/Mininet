@@ -44,50 +44,57 @@ int main( int argc, char *argv[] )  {
     printf("listening output: %d\n", listening);
     printf("--------------REQUESTS--------------\n");
 
-    if ((new_socket = accept(server, NULL, NULL))<0) //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
-    {
-        perror("accept");
-        exit(EXIT_FAILURE);
+    while(1) { //while loop so it can process more requests that come in
+        if ((new_socket = accept(server, NULL, NULL)) <
+            0) //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
+        {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+        char buffer[30000];
+        read(new_socket, buffer, 30000);
+
+        printf("testing\n");
+        get_header(&request, buffer);
+        printf("IN MAIN FUNCTION: %s\n", request.filename);
+
+        //Example of sending a HTTP response
+        //    char *reply =
+        //            "HTTP/1.1 200 OK\n"
+        //            "Date: Thu, 19 Feb 2009 12:27:04 GMT\n"
+        //            "Server: Apache/2.2.3\n"
+        //            "Last-Modified: Wed, 18 Jun 2003 16:05:58 GMT\n"
+        //            "ETag: \"56d-9989200-1132c580\"\n"
+        //            "Content-Type: text/html\n"
+        //            "Content-Length: 15\n"
+        //            "Accept-Ranges: bytes\n"
+        //            "Connection: close\n"
+        //            "\n"
+        //            "data of file being sent over\n";
+
+        //take out the last / if it exists because we add it in request filename.
+        if (root_address[strlen(root_address) - 1] == '/') {
+            root_address[strlen(root_address) - 1] = '\0';
+        }
+        printf("root_address: %s\n", root_address);
+
+        //check file type
+        if (strcmp(request.filetype, JPG) == 0) {
+            jpeg_handler(new_socket, &request, root_address);
+        } else if (strcmp(request.filetype, HTML) == 0) {
+            html_handler(new_socket, &request, root_address);
+        } else if (strcmp(request.filetype, CSS) == 0) {
+            css_handler(new_socket, &request, root_address);
+        } else {
+            write(new_socket,
+                  "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>",
+                  strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        }
+        free_memory(&request);
+        //    char* rep = "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n";
+        //    send(new_socket, rep, 45, 0);
+        close(new_socket);
     }
-    char buffer[30000];
-    read( new_socket , buffer, 30000);
-
-    printf("testing\n");
-    get_header(&request, buffer);
-    printf("IN MAIN FUNCTION: %s\n", request.filename);
-
-    //Example of sending a HTTP response
-//    char *reply =
-//            "HTTP/1.1 200 OK\n"
-//            "Date: Thu, 19 Feb 2009 12:27:04 GMT\n"
-//            "Server: Apache/2.2.3\n"
-//            "Last-Modified: Wed, 18 Jun 2003 16:05:58 GMT\n"
-//            "ETag: \"56d-9989200-1132c580\"\n"
-//            "Content-Type: text/html\n"
-//            "Content-Length: 15\n"
-//            "Accept-Ranges: bytes\n"
-//            "Connection: close\n"
-//            "\n"
-//            "data of file being sent over\n";
-
-    //take out the last / if it exists because we add it in request filename.
-    if (root_address[strlen(root_address)-1] == '/') {
-        root_address[strlen(root_address)-1] = '\0';
-    }
-    printf("root_address: %s\n", root_address);
-
-    //check file type
-    if(strcmp(request.filetype, JPG) == 0 ) {
-        jpeg_handler(new_socket, &request, root_address);
-    } else if (strcmp(request.filetype, HTML) == 0 ) {
-        html_handler(new_socket, &request, root_address);
-    } else {
-        write(new_socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
-    }
-    free_memory(&request);
-//    char* rep = "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n";
-//    send(new_socket, rep, 45, 0);
-    close(new_socket);
 
 }
 

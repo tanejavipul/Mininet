@@ -31,7 +31,6 @@ const char *VERSION_NOT_SUPPORTED = "505 HTTP VERSION NOT SUPPORTED";
 char *JPG = "jpg";
 char *HTML = "html";
 char *CSS = "css";
-//add more here
 
 struct Request {
     char* filename;
@@ -229,6 +228,42 @@ void jpeg_handler(int socket, struct Request *req, char* root_address) // handle
     else // If there is not such a file.
     {
         write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+    }
+
+    free(full_path);
+    close(fp);
+}
+
+void css_handler(int socket, struct Request *req, char* root_address) // handle css files
+{
+
+    char* file_name = req->filename;
+    printf("CSS HANDLER root_address: %s\n", root_address);
+    printf("file_name: %s\n", req->filename);
+
+    char *buffer;
+    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
+    int fp;
+
+    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    strcat(full_path, file_name);
+    // puts(full_path);
+
+    printf("FULL PATH: %s\n", full_path);
+
+    if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+    {
+        puts("CSS Found.");
+        int bytes;
+        char buffer[BUFFER_SIZE];
+
+        send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/css\r\n\r\n", 45, 0);
+        while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+            write (socket, buffer, bytes); // Send the part of the jpeg to client.
+    }
+    else // If there is not such a file.
+    {
+        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/css\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
     }
 
     free(full_path);
