@@ -138,25 +138,67 @@ void get_header(struct Request *req, char* header) {
     free(extract_token);
 }
 
+void html_handler(int socket, struct Request *req, char* root_address) // handle html files
+{
+    char* file_name = req->filename;
+    printf("root_address: %s\n", root_address);
+    printf("file_name: %s\n", req->filename);
+
+    char *buffer;
+    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
+    FILE *fp;
+
+    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    strcat(full_path, file_name);
 
 
+    printf("FULL PATH: %s\n", full_path);
 
+    fp = fopen(full_path, "r");
+    if (fp != NULL) //FILE FOUND
+    {
+        puts("File Found.");
 
+        fseek(fp, 0, SEEK_END); // Find the file size.
+        long bytes_read = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
 
-void generate_response(struct Response *r) {
-    //Status Line (1)
+        send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n", 44, 0); // Send the header for succesful respond.
+        buffer = (char *)malloc(bytes_read * sizeof(char));
 
-    char * status_line = (char *) malloc(1 + 1 + 2 + strlen(r->version)+ strlen(r->response) ); //space, /r/n, and string terminator??
+        fread(buffer, bytes_read, 1, fp); // Read the html file to buffer.
+        write (socket, buffer, bytes_read); // Send the content of the html file to client.
+        free(buffer);
 
-    sprintf(status_line, "%s %s", r->version, r->response);
-    strcat(status_line, END_OF_LINE);
-    printf("Contents of structure are %s\n", r->version);
-    printf("Contents of structure are %s\n", r->response);
+        fclose(fp);
+    }
+    else // If there is not such a file.
+    {
+        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+    }
 
-    printf("Contents of structure are %s\n", status_line);
-
-    free(status_line);
+    free(full_path);
 }
+
+
+
+
+//Most likely delete later
+//char* generate_response(struct Response *r) {
+//    //Status Line (1)
+//
+//    char * status_line = (char *) malloc(1 + 1 + 2 + strlen(r->version)+ strlen(r->response) ); //space, /r/n, and string terminator??
+//
+//    sprintf(status_line, "%s %s", r->version, r->response);
+//    strcat(status_line, END_OF_LINE);
+//
+//    printf("Contents of structure are %s\n", r->version);
+//    printf("Contents of structure are %s\n", r->response);
+//    printf("Contents of structure are %s\n", status_line);
+//
+//    //free(status_line);
+//    return status_line;
+//}
 
 
 void free_memory(struct Request *req) {
