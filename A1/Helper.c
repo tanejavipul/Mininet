@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <fcntl.h>
+
+
+#define BUFFER_SIZE 1024
 
 //Request
 char *END_OF_HEADER = "\r\n\r\n";
@@ -23,10 +27,16 @@ char *NOT_FOUND = "404 NOT FOUND";
 char *BAD_REQUEST = "400 BAD_REQUEST";
 const char *VERSION_NOT_SUPPORTED = "505 HTTP VERSION NOT SUPPORTED";
 
+//FileType
+char *JPG = "jpg";
+char *HTML = "html";
+char *CSS = "css";
+//add more here
 
 struct Request {
     char* filename;
     char* accept;
+    char* filetype;
 };
 
 
@@ -92,25 +102,34 @@ char* get_root_filename_path(char* root_path, char* filename){
 
 //    get_header(&request, buffer);
 void get_header(struct Request *req, char* header) {
-    printf("INSIDER GET_HEADER\n");
+    printf("INSIDE GET_HEADER: %s\n", header);
 
     char *main_strtok_pointer = NULL;
     char *extract_token = malloc(sizeof(char)*10000);
 
     char *token = strtok_r(header, END_OF_LINE, &main_strtok_pointer); //DO NOT USE strtok
 
-
     while(token != NULL) {
         strcpy(extract_token,token);
 
-        //PULL FILENAME
+        //PULL FILENAME + FILE TYPE
         if(contains(extract_token, strlen(extract_token), GET, strlen(GET))==0)
         {
+            //get filename
             req->filename = malloc(sizeof(char)*(strlen(extract_token)));
             char *get_strtok_pointer = NULL;
-            char *get_token = strtok_r(extract_token, " ", &get_strtok_pointer);
+            char *get_token = strtok_r(extract_token, WHITE_SPACE, &get_strtok_pointer);
             get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
             strcpy(req->filename, get_token);
+            
+            //get filetype
+            req->filetype = malloc(sizeof(char)*(strlen(extract_token)));
+            char *get_strtok_pointer2 = NULL;
+            char *get_file_token = strtok_r(get_token, ".", &get_strtok_pointer2);
+            get_file_token = strtok_r(NULL, ".", &get_strtok_pointer2);
+
+            printf("get_token file name : %s\n", get_file_token);
+            strcpy(req->filetype, get_file_token);
         }
 
         //PULL ACCEPT
@@ -141,7 +160,7 @@ void get_header(struct Request *req, char* header) {
 void html_handler(int socket, struct Request *req, char* root_address) // handle html files
 {
     char* file_name = req->filename;
-    printf("root_address: %s\n", root_address);
+    printf("HTML INSIDEE root_address: %s\n", root_address);
     printf("file_name: %s\n", req->filename);
 
     char *buffer;
@@ -180,7 +199,41 @@ void html_handler(int socket, struct Request *req, char* root_address) // handle
     free(full_path);
 }
 
+void jpeg_handler(int socket, struct Request *req, char* root_address) // handle jpeg files
+{
 
+    char* file_name = req->filename;
+    printf("JPTEGGG HANDLER root_address: %s\n", root_address);
+    printf("file_name: %s\n", req->filename);
+
+    char *buffer;
+    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
+    int fp;
+
+    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    strcat(full_path, file_name);
+    // puts(full_path);
+
+    printf("FULL PATH: %s\n", full_path);
+
+    if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+    {
+        puts("Image Found.");
+        int bytes;
+        char buffer[BUFFER_SIZE];
+
+        send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
+	    while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+			write (socket, buffer, bytes); // Send the part of the jpeg to client.
+    }
+    else // If there is not such a file.
+    {
+        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+    }
+
+    free(full_path);
+    close(fp);
+}
 
 
 //Most likely delete later
