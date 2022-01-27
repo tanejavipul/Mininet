@@ -82,7 +82,7 @@ int main( int argc, char *argv[] )  {
     } else if (strcmp(request.filetype, HTML) == 0 ) {
         html_handler(new_socket, &request, root_address);
     } else {
-        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        write(new_socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
     }
     free_memory(&request);
 //    char* rep = "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n";
