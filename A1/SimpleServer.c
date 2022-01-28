@@ -1,6 +1,16 @@
 #include "Helper.c"
 
-
+/*
+HTTP/1.0 200 OK
+Date: Fri, 08 Aug 2003 08:12:31 GMT
+Server: Apache/1.3.27 (Unix)
+MIME-version: 1.0
+Last-Modified: Fri, 01 Aug 2003 12:45:26 GMT
+Content-Type: text/html
+Content-Length: 2345
+** a blank line *
+<HTML> ...
+ */
 int main( int argc, char *argv[] )  {
     //Get Arguments
     int port_number = atoi(argv[1]);
@@ -23,6 +33,8 @@ int main( int argc, char *argv[] )  {
     struct sockaddr_in serverAddress;
     struct Request request;
 
+    request.http_version = 0;
+
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("socket failed");
@@ -42,11 +54,11 @@ int main( int argc, char *argv[] )  {
         return 1;
     }
     printf("listening output: %d\n", listening);
-    printf("--------------REQUESTS--------------\n");
 
     while(1) { //while loop so it can process more requests that come in
-        if ((new_socket = accept(server, NULL, NULL)) <
-            0) //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
+        printf("--------------REQUESTS--------------\n");
+        //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
+        if ((new_socket = accept(server, NULL, NULL)) <0)
         {
             perror("accept");
             exit(EXIT_FAILURE);
@@ -54,23 +66,7 @@ int main( int argc, char *argv[] )  {
         char buffer[30000];
         read(new_socket, buffer, 30000);
 
-        printf("testing\n");
         get_header(&request, buffer);
-        printf("IN MAIN FUNCTION: %s\n", request.filename);
-
-        //Example of sending a HTTP response
-        //    char *reply =
-        //            "HTTP/1.1 200 OK\n"
-        //            "Date: Thu, 19 Feb 2009 12:27:04 GMT\n"
-        //            "Server: Apache/2.2.3\n"
-        //            "Last-Modified: Wed, 18 Jun 2003 16:05:58 GMT\n"
-        //            "ETag: \"56d-9989200-1132c580\"\n"
-        //            "Content-Type: text/html\n"
-        //            "Content-Length: 15\n"
-        //            "Accept-Ranges: bytes\n"
-        //            "Connection: close\n"
-        //            "\n"
-        //            "data of file being sent over\n";
 
         //take out the last / if it exists because we add it in request filename.
         if (root_address[strlen(root_address) - 1] == '/') {
@@ -78,22 +74,18 @@ int main( int argc, char *argv[] )  {
         }
         printf("root_address: %s\n", root_address);
 
-        //check file type
-        if (strcmp(request.filetype, JPG) == 0) {
-            jpeg_handler(new_socket, &request, root_address);
-        } else if (strcmp(request.filetype, HTML) == 0) {
-            html_handler(new_socket, &request, root_address);
-        } else if (strcmp(request.filetype, CSS) == 0) {
-            css_handler(new_socket, &request, root_address);
-        } else {
-            write(new_socket,
-                  "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>",
-                  strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
-        }
-        free_memory(&request);
+
+        hander(new_socket, &request, root_address);
+
+
+        status_response(&request,NOT_FOUND);
+        date_response();
+
+
         //    char* rep = "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n";
         //    send(new_socket, rep, 45, 0);
         close(new_socket);
+        free_memory(&request);
     }
 
 }

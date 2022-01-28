@@ -22,20 +22,34 @@ char *WHITE_SPACE = " ";
 char *ACCEPT_EMPTY = "*/*";
 
 //Response
+char *HTTP11 = "HTTP/1.1";
+char *HTTP10 = "HTTP/1.0";
 char *OK = "200 OK";
 char *NOT_FOUND = "404 NOT FOUND";
 char *BAD_REQUEST = "400 BAD_REQUEST";
 const char *VERSION_NOT_SUPPORTED = "505 HTTP VERSION NOT SUPPORTED";
+char *SERVER = "SERVER: UTM_358_SERVER (BROKEN-UNFIXABLE)\r\n";
+char *CONTENT_TYPE = "Content-Type:";
+char *CONTENT_LENGTH = "Content-Length:";
+char *DATE = "Data:";
 
 //FileType
 char *JPG = "jpg";
 char *HTML = "html";
 char *CSS = "css";
+char *TEXT = "text/";
+char *IMAGE = "image/";
+
+char *DAYS_OF_WEEK[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+char *MONTH[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec" };
+
 
 struct Request {
     char* filename;
     char* accept;
     char* filetype;
+    int http_version; // 0 = HTTP/1.0 or 1 = HTTP/1.1
+
 };
 
 
@@ -88,15 +102,6 @@ int contains(char* string, int string_len, char* word, int word_len) {
     return -1;
 }
 
-
-char* get_root_filename_path(char* root_path, char* filename){
-    int rootlen = strlen(root_path);
-    int filelen = strlen(filename);
-    char *output = malloc( (rootlen+filelen+1) * sizeof(char));
-    strcpy(output, root_path);
-    strcat(output,filename);
-    return output;
-}
 
 
 //    get_header(&request, buffer);
@@ -156,6 +161,119 @@ void get_header(struct Request *req, char* header) {
     free(extract_token);
 }
 
+
+/*
+ *
+ */
+void hander(int socket, struct Request *req, char* root_address) {
+    char* file_name = req->filename;
+    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
+
+    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    strcat(full_path, file_name);
+
+
+    if(strcmp(req->filetype, HTML) == 0) {
+        FILE *fp;
+        fp = fopen(full_path, "r");
+        if (fp != NULL) //FILE FOUND
+        {
+            char *buffer;
+            puts("File Found.");
+
+            fseek(fp, 0, SEEK_END); // Find the file size.
+            long bytes_read = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
+
+            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n", 44, 0); // Send the header for succesful respond.
+            buffer = (char *)malloc(bytes_read * sizeof(char));
+
+            fread(buffer, bytes_read, 1, fp); // Read the html file to buffer.
+            write (socket, buffer, bytes_read); // Send the content of the html file to client.
+
+            free(buffer);
+            fclose(fp);
+        }
+    }
+    else if(strcmp(req->filetype, JPG) == 0) {
+        int fp;
+        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+        {
+            puts("Image Found.");
+            int bytes;
+            char buffer[BUFFER_SIZE];
+
+            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
+            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+                write (socket, buffer, bytes); // Send the part of the jpeg to client.
+            close(fp);
+        }
+
+    }
+    else if(strcmp(req->filetype, CSS) == 0)
+    {
+        int fp;
+        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+        {
+            puts("CSS Found.");
+            int bytes;
+            char buffer[BUFFER_SIZE];
+
+            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/css\r\n\r\n", 45, 0);
+            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+                write (socket, buffer, bytes); // Send the part of the jpeg to client.
+            close(fp);
+        }
+
+    }
+    else // If there is not such a file.
+    {
+        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+    }
+
+    free(full_path);
+}
+
+
+
+
+char *status_response( struct Request *req, char *status){
+    // HTTP/1.0 200 OK
+    int x = strlen(HTTP10) + strlen(req->filetype) + strlen(TEXT);
+    x += strlen(IMAGE) + strlen(status) + strlen(END_OF_LINE) + 100;
+
+    char *output = (char *)malloc(x * sizeof(char));
+    snprintf(output, x, "%s %s %s", HTTP10,status,END_OF_LINE);
+
+    printf("STATUS_RESPONSE: %s",output);
+    return output;
+}
+
+char *date_response() {
+    //Date: Fri, 08 Aug 2003 08:12:31 GMT
+    char *output = (char *)malloc(100 * sizeof(char));
+    time_t now = time(NULL);
+    struct tm *tm = localtime(&now);
+
+    //returns a int for response code
+    snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,tm->tm_zone);
+
+    printf("DATE_RESPONSE: %s",output);
+    return output
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 void html_handler(int socket, struct Request *req, char* root_address) // handle html files
 {
     char* file_name = req->filename;
@@ -172,7 +290,7 @@ void html_handler(int socket, struct Request *req, char* root_address) // handle
 
     printf("FULL PATH: %s\n", full_path);
 
-    fp = fopen(full_path, "r");
+
     if (fp != NULL) //FILE FOUND
     {
         puts("File Found.");
@@ -313,6 +431,16 @@ void free_memory(struct Request *req) {
         char* x = strstr(big,small);
         return x-big;
     }
+
+    char* get_root_filename_path(char* root_path, char* filename){
+        int rootlen = strlen(root_path);
+        int filelen = strlen(filename);
+        char *output = malloc( (rootlen+filelen+1) * sizeof(char));
+        strcpy(output, root_path);
+        strcat(output,filename);
+        return output;
+    }
+
 
 
 
