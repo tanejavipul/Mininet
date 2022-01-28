@@ -32,6 +32,7 @@ char *SERVER = "SERVER: UTM_358_SERVER (BROKEN-UNFIXABLE)\r\n";
 char *CONTENT_TYPE = "Content-Type:";
 char *CONTENT_LENGTH = "Content-Length:";
 char *DATE = "Data:";
+char *MIME = "MIME-version: 1.0\r\n";
 
 //FileType
 char *JPG = "jpg";
@@ -162,10 +163,27 @@ void get_header(struct Request *req, char* header) {
 }
 
 
+
+void css_jpg_write(int socket, char* full_path) {
+    int fp;
+    if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+    {
+        puts("CSS or JPG Found.");
+        int bytes;
+        char buffer[BUFFER_SIZE];
+
+        send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpg\r\n\r\n", 45, 0);
+        while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+            write (socket, buffer, bytes); // Send the part of the jpeg to client.
+        close(fp);
+    }
+}
+
+
 /*
  *
  */
-void hander(int socket, struct Request *req, char* root_address) {
+void handler(int socket, struct Request *req, char* root_address) {
     char* file_name = req->filename;
     char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
 
@@ -259,7 +277,27 @@ char *date_response() {
     snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,tm->tm_zone);
 
     printf("DATE_RESPONSE: %s",output);
-    return output
+    return output;
+}
+
+// TODO need to fix
+char *content_type(struct Request *req) {
+    char *output = (char *)malloc(100 * sizeof(char));
+
+    snprintf(output, 100, "%s %s%s%s", CONTENT_TYPE,TEXT,req->filetype,END_OF_LINE);
+
+    printf("STATUS_RESPONSE: %s",output);
+    return output;
+}
+
+char *content_length(struct Request *req, int length) {
+    char *output = (char *)malloc(100 * sizeof(char));
+
+    snprintf(output, 100, "%s %d\r\n", CONTENT_LENGTH,length);
+
+    printf("STATUS_RESPONSE: %s",output);
+    return output;
+
 }
 
 

@@ -75,7 +75,7 @@ int main( int argc, char *argv[] )  {
         printf("root_address: %s\n", root_address);
 
 
-        hander(new_socket, &request, root_address);
+        handler(new_socket, &request, root_address);
 
 
         status_response(&request,NOT_FOUND);
