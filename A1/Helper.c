@@ -290,7 +290,7 @@ char *content_type(struct Request *req) {
     return output;
 }
 
-char *content_length(struct Request *req, int length) {
+char *content_length(int length) {
     char *output = (char *)malloc(100 * sizeof(char));
 
     snprintf(output, 100, "%s %d\r\n", CONTENT_LENGTH,length);
@@ -298,6 +298,23 @@ char *content_length(struct Request *req, int length) {
     printf("STATUS_RESPONSE: %s",output);
     return output;
 
+}
+
+char *compile_response(struct Request *req, char *status, int length) {
+    char *status_r = status_response( req, status);
+    char *date = date_response();
+    char *content_t = content_type(req);
+    char *content_len = content_length(length);
+
+    int total = strlen(status_r) + strlen(date) + strlen(content_t) + strlen(content_len);
+    char *output = malloc(sizeof(char)*total + 1000);
+
+    free(status_r);
+    free(date);
+    free(content_t);
+    free(content_len);
+
+    return output;
 }
 
 
