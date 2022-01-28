@@ -73,19 +73,16 @@ int main( int argc, char *argv[] )  {
             root_address[strlen(root_address) - 1] = '\0';
         }
         printf("root_address: %s\n", root_address);
-
-
         handler(new_socket, &request, root_address);
 
+//        status_response(&request,OK);
+//        date_response();
+//        content_type(&request);
+//        compile_response(&request, OK, 0);
 
-        status_response(&request,NOT_FOUND);
-        date_response();
-
-
-        //    char* rep = "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n";
-        //    send(new_socket, rep, 45, 0);
         close(new_socket);
         free_memory(&request);
+        //free output from compiler response
     }
 
 }

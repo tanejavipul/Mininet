@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <fcntl.h>
-
+#include <sys/stat.h>
 
 #define BUFFER_SIZE 1024
 
@@ -31,13 +31,14 @@ const char *VERSION_NOT_SUPPORTED = "505 HTTP VERSION NOT SUPPORTED";
 char *SERVER = "SERVER: UTM_358_SERVER (BROKEN-UNFIXABLE)\r\n";
 char *CONTENT_TYPE = "Content-Type:";
 char *CONTENT_LENGTH = "Content-Length:";
-char *DATE = "Data:";
+char *DATE = "Date:";
 char *MIME = "MIME-version: 1.0\r\n";
 
 //FileType
 char *JPG = "jpg";
 char *HTML = "html";
 char *CSS = "css";
+char *PLAIN = "plain";
 char *TEXT = "text/";
 char *IMAGE = "image/";
 
@@ -59,6 +60,7 @@ struct Request {
     char* filename;
     char* accept;
     char* filetype;
+    char* type;
     int http_version; // 0 = HTTP/1.0 or 1 = HTTP/1.1
 };
 
@@ -119,6 +121,16 @@ void get_header(struct Request *req, char* header) {
 
             printf("get_token file name : %s\n", get_file_token);
             strcpy(req->filetype, get_file_token);
+
+
+            if(strcmp(get_file_token, JPG) == 0) {
+                req->type = malloc(sizeof(char)*(strlen(IMAGE)));
+                strcpy(req->type, IMAGE);
+            } else { //filetype is html, css, txt or js, NOTE: might be an issue if we want to handle additional extensions, IDEA: send BAD REQUEST if not html css txt or js
+                req->type = malloc(sizeof(char)*(strlen(TEXT)));
+                strcpy(req->type, TEXT);
+            }
+
         }
 
         //PULL ACCEPT
@@ -146,8 +158,6 @@ void get_header(struct Request *req, char* header) {
     free(extract_token);
 }
 
-
-
 void css_jpg_write(int socket, char* full_path) {
     int fp;
     if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
@@ -162,82 +172,6 @@ void css_jpg_write(int socket, char* full_path) {
         close(fp);
     }
 }
-
-
-/*
- *
- */
-void handler(int socket, struct Request *req, char* root_address) {
-    char* file_name = req->filename;
-    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
-
-    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
-    strcat(full_path, file_name);
-
-
-    if(strcmp(req->filetype, HTML) == 0) {
-        FILE *fp;
-        fp = fopen(full_path, "r");
-        if (fp != NULL) //FILE FOUND
-        {
-            char *buffer;
-            puts("File Found.");
-
-            fseek(fp, 0, SEEK_END); // Find the file size.
-            long bytes_read = ftell(fp);
-            fseek(fp, 0, SEEK_SET);
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n", 44, 0); // Send the header for succesful respond.
-            buffer = (char *)malloc(bytes_read * sizeof(char));
-
-            fread(buffer, bytes_read, 1, fp); // Read the html file to buffer.
-            write (socket, buffer, bytes_read); // Send the content of the html file to client.
-
-            free(buffer);
-            fclose(fp);
-        }
-    }
-    else if(strcmp(req->filetype, JPG) == 0) {
-        int fp;
-        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
-        {
-            puts("Image Found.");
-            int bytes;
-            char buffer[BUFFER_SIZE];
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
-            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
-                write (socket, buffer, bytes); // Send the part of the jpeg to client.
-            close(fp);
-        }
-
-    }
-    else if(strcmp(req->filetype, CSS) == 0)
-    {
-        int fp;
-        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
-        {
-            puts("CSS Found.");
-            int bytes;
-            char buffer[BUFFER_SIZE];
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/css\r\n\r\n", 45, 0);
-            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
-                write (socket, buffer, bytes); // Send the part of the jpeg to client.
-            close(fp);
-        }
-
-    }
-    else // If there is not such a file.
-    {
-        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
-    }
-
-    free(full_path);
-}
-
-
-
 
 char *status_response( struct Request *req, char *status){
     // HTTP/1.0 200 OK
@@ -274,9 +208,9 @@ char *date_response() {
 char *content_type(struct Request *req) {
     char *output = (char *)malloc(100 * sizeof(char));
 
-    snprintf(output, 100, "%s %s%s%s", CONTENT_TYPE,TEXT,req->filetype,END_OF_LINE);
+    snprintf(output, 100, "%s %s%s%s", CONTENT_TYPE,req->type,req->filetype,END_OF_LINE);
 
-    printf("STATUS_RESPONSE: %s",output);
+    printf("CONTENT_TYPE_RESPONSE: %s",output);
     return output;
 }
 
@@ -285,56 +219,70 @@ char *content_length(int length) {
 
     snprintf(output, 100, "%s %d\r\n", CONTENT_LENGTH,length);
 
-    printf("STATUS_RESPONSE: %s",output);
+    printf("CONTENT_LENGTH_RESPONSE: %s",output);
     return output;
 
 }
 
 char *compile_response(struct Request *req, char *status, int length) {
-    char *status_r = status_response( req, status);
+    char *status_r = status_response(req, status);
     char *date = date_response();
     char *content_t = content_type(req);
     char *content_len = content_length(length);
 
-    int total = strlen(status_r) + strlen(date) + strlen(content_t) + strlen(content_len);
+    int total = strlen(status_r) + strlen(date) + strlen(MIME) + strlen(content_t) + strlen(content_len);
     char *output = malloc(sizeof(char)*total + 1000);
+
+    // do the copy and concat
+    strcpy(output, status_r);
+    strcat(output,date); // or strncat
+    strcat(output,MIME);
+    strcat(output,content_t);
+    strcat(output,content_len);
+    strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
 
     free(status_r);
     free(date);
     free(content_t);
     free(content_len);
-
+    printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }
 
+/*
+ *
+ */
+void handler(int socket, struct Request *req, char* root_address) {
+    char* file_name = req->filename;
+    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
 
+    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    strcat(full_path, file_name);
 
+    int fp;
+    if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
+    {
+        printf("%s Found\n", req->filetype);
+        int bytes;
+        char buffer[BUFFER_SIZE];
 
+        //getting file size
+        struct stat st;
+        stat(full_path, &st);
+        long file_size = st.st_size;
 
+        char* response = compile_response(req, OK, file_size); //generate response
+        send(socket, response, strlen(response), 0);
 
-
-
-
-
-
-
-//Most likely delete later
-//char* generate_response(struct Response *r) {
-//    //Status Line (1)
-//
-//    char * status_line = (char *) malloc(1 + 1 + 2 + strlen(r->version)+ strlen(r->response) ); //space, /r/n, and string terminator??
-//
-//    sprintf(status_line, "%s %s", r->version, r->response);
-//    strcat(status_line, END_OF_LINE);
-//
-//    printf("Contents of structure are %s\n", r->version);
-//    printf("Contents of structure are %s\n", r->response);
-//    printf("Contents of structure are %s\n", status_line);
-//
-//    //free(status_line);
-//    return status_line;
-//}
-
+        while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
+            write (socket, buffer, bytes); // Send the part of the jpeg to client.
+        close(fp);
+    }
+    else {
+        write(socket, "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+    }
+    free(full_path);
+}
 
 void free_memory(struct Request *req) {
     if (req->accept != NULL) {
@@ -344,11 +292,6 @@ void free_memory(struct Request *req) {
         free(req->filename);
     }
 }
-
-
-
-
-
 
     // DEPRECATED CODE
     char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
@@ -369,16 +312,6 @@ void free_memory(struct Request *req) {
         strcat(output,filename);
         return output;
     }
-
-
-
-
-
-
-
-
-
-
 
 
 /*
