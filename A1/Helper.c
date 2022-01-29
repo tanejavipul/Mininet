@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <fcntl.h>
-
+#include <sys/stat.h>
 
 #define BUFFER_SIZE 1024
 
@@ -20,6 +20,11 @@ char *USER_AGENT = "User-Agent:";
 char *ACCEPT = "Accept: ";
 char *WHITE_SPACE = " ";
 char *ACCEPT_EMPTY = "*/*";
+//Conditionals
+char *IF_MATCH = "If-Match:";
+
+char *IF_MODIFIED = "If-Modified-Since:";
+
 
 //Response
 char *HTTP11 = "HTTP/1.1";
@@ -91,7 +96,7 @@ int contains(char* string, int string_len, char* word, int word_len) {
 
 //    get_header(&request, buffer);
 void get_header(struct Request *req, char* header) {
-    printf("INSIDE GET_HEADER: %s\n", header);
+    printf("INSIDE GET_HEADER: %s \nbruh\n", header);
 
     char *main_strtok_pointer = NULL;
     char *extract_token = malloc(sizeof(char)*10000);
@@ -110,8 +115,9 @@ void get_header(struct Request *req, char* header) {
             char *get_token = strtok_r(extract_token, WHITE_SPACE, &get_strtok_pointer);
             get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
             strcpy(req->filename, get_token);
-            
+
             //get filetype
+            //FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
             req->filetype = malloc(sizeof(char)*(strlen(extract_token)));
             char *get_strtok_pointer2 = NULL;
             char *get_file_token = strtok_r(get_token, ".", &get_strtok_pointer2);
@@ -140,6 +146,28 @@ void get_header(struct Request *req, char* header) {
             }
         }
 
+        //PULL CONDITIONAL NOT DONE
+        if(contains(extract_token, strlen(extract_token), IF_MODIFIED, strlen(IF_MODIFIED))==0)
+        {
+            //get filename
+            req->filename = malloc(sizeof(char)*(strlen(extract_token)));
+            char *get_strtok_pointer = NULL;
+            char *get_token = strtok_r(extract_token, WHITE_SPACE, &get_strtok_pointer);
+            get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
+            strcpy(req->filename, get_token);
+
+            //get filetype
+
+            //FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
+            req->filetype = malloc(sizeof(char)*(strlen(extract_token)));
+            char *get_strtok_pointer2 = NULL;
+            char *get_file_token = strtok_r(get_token, ".", &get_strtok_pointer2);
+            get_file_token = strtok_r(NULL, ".", &get_strtok_pointer2);
+
+            printf("get_token file name : %s\n", get_file_token);
+            strcpy(req->filetype, get_file_token);
+        }
+
         printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }
@@ -163,6 +191,18 @@ void css_jpg_write(int socket, char* full_path) {
     }
 }
 
+char *last_modified( char *full_path ) {
+    //Fri, 08 Aug 2003 08:12:31 GMT
+    char *output = (char *)malloc(100 * sizeof(char));
+    printf("we in?\n");
+    struct stat attr;
+    stat(full_path, &attr);
+
+    strftime(output, 100, "%a, %d %b %Y %X %Z", localtime(&attr.st_mtime));
+
+    printf("LAST_MODIFIED + UPDATE: %s\n", output);
+    return output;
+}
 
 /*
  *
@@ -173,7 +213,7 @@ void handler(int socket, struct Request *req, char* root_address) {
 
     strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
     strcat(full_path, file_name);
-
+    char *modified_time_stamp = last_modified(full_path);
 
     if(strcmp(req->filetype, HTML) == 0) {
         FILE *fp;
