@@ -147,13 +147,31 @@ char *content_length(int length) {
 }
 
 
+// returns last modified of file
+char *last_modified_response(struct Request *req, char *full_path) {
+    //Fri, 08 Aug 2003 08:12:31 GMT
+    char *output = (char *) malloc(100 * sizeof(char));
+    char *last_modified_time = (char *) malloc(100 * sizeof(char));
+    struct stat attr;
+    stat(full_path, &attr);
 
-char *compile_response(struct Request *req, char *status, int length, char *full_path, char *last_modified) {
+    strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
+
+    strcpy(output, LAST_MODIFIED);
+    strcat(output, last_modified_time);
+    printf("completed last modified\n");
+    return output;
+}
+
+
+
+char *compile_response(struct Request *req, char *status, int length, char *full_path) {
     char *status_r = status_response(req, status);
     char *date = date_response();
     char *content_t = content_type(req);
     char *content_len = content_length(length);
-    char *last_modify = last_modified;
+    char *last_modify = last_modified_response(req, full_path);
+
 
     int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len);
     total += strlen(last_modify);
@@ -178,6 +196,7 @@ char *compile_response(struct Request *req, char *status, int length, char *full
     free(date);
     free(content_t);
     free(content_len);
+    free(last_modify);
     printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }

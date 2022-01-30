@@ -75,11 +75,6 @@ int main( int argc, char *argv[] )  {
         printf("root_address: %s\n", root_address);
         handler(new_socket, &request, root_address);
 
-//        status_response(&request,OK);
-//        date_response();
-//        content_type(&request);
-//        compile_response(&request, OK, 0);
-
         close(new_socket);
         free_memory(&request);
         //free output from compiler response

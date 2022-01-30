@@ -59,7 +59,7 @@ void get_header(struct Request *req, char* header) {
         //PULL ACCEPT
         if(contains(extract_token, ACCEPT)==0)
         {
-            //TODO NEED TO FIX AND TEST
+            // TODO NEED TO FIX AND TEST
             //check if accept field is not empty
             if(contains(extract_token, ACCEPT_EMPTY)!=0) {
                 req->accept = malloc(sizeof(char)*(strlen(extract_token)));
@@ -75,13 +75,11 @@ void get_header(struct Request *req, char* header) {
             printf("extract token if modifeid: %s\n", extract_token);
             char *output = malloc(sizeof(char)*(strlen(extract_token)));
             sscanf(extract_token, "If-Modified-Since: %[^\\t\\n]", output);
+            printf("hello\n");
 
             req->if_modified_timestamp = malloc(sizeof(char)*(strlen(output)));
             printf("if_modified_timestamp : %s\n", output);
             strcpy(req->if_modified_timestamp, output);
-
-            struct tm *time;
-            strftime(output, 100, "%a, %d %b %Y %X %Z", time);
         }
 
         printf(" %s \n", token);
@@ -125,41 +123,31 @@ void update_tm_struct(struct Request *req, struct tm *timestamp){
     timestamp->tm_hour = hour;
     timestamp->tm_min = min;
     timestamp->tm_sec = sec;
+    printf("completed update\n");
 }
 
-
-char *last_modified(struct Request *req, char *full_path) {
-    //Fri, 08 Aug 2003 08:12:31 GMT
-    char *output = (char *) malloc(100 * sizeof(char));
-    char *last_modified_time = (char *) malloc(100 * sizeof(char));
-    struct stat attr;
-    stat(full_path, &attr);
-
-    strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
-
-    strcpy(output, LAST_MODIFIED);
-    strcat(output, last_modified_time);
-    return output;
-}
-
-
-int time_diff (struct Request *req, char *full_path ) {
+int time_diff (struct Request *req, char *full_path) {
     //    printf("timestamp: %s\n", asctime (&timestamp));
     //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
+    printf("starting time diff last modified\n");
 
-    struct stat attr;
-    stat(full_path, &attr);
 
-    struct tm timestamp; // malloc(sizeof(struct tm)); may need to malloc
-    update_tm_struct(req, &timestamp);
-    double diff = difftime(mktime(&timestamp), mktime(gmtime(&attr.st_mtime)));
+    // file modified time
+    struct stat file_modified_time;
+    stat(full_path, &file_modified_time);
+
+    // header modified time
+    struct tm header_modified_time; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(req, &header_modified_time);
+
+    double diff = difftime(mktime(&header_modified_time), mktime(gmtime(&file_modified_time.st_mtime)));
 
     if ( diff > 0 ) {
-        printf("%s is newer than %s\n", req->if_modified_timestamp, asctime (gmtime(&attr.st_mtime)));
+        printf("%s is newer than %s\n", req->if_modified_timestamp, asctime (gmtime(&file_modified_time.st_mtime)));
         //failed
         return -1;
     } else {
-        printf("%s is older than %s\n", req->if_modified_timestamp, asctime (gmtime(&attr.st_mtime)));
+        printf("%s is older than %s\n", req->if_modified_timestamp, asctime (gmtime(&file_modified_time.st_mtime)));
         return 0;
     }
 }
@@ -186,10 +174,6 @@ void handler(int socket, struct Request *req, char* root_address) {
         stat(full_path, &st);
         long file_size = st.st_size;
 
-        char *last_modify = last_modified(req, full_path);
-        //Works but when you add an if-modified header then remove it in same session for some reason it still thinks req->if_modified_timestamp
-        //has a buffer even though we free it at the end so it will go into this if statement and won't technically be null TODO
-        //could be an issue with free and the while loop?
         if (req->if_modified_timestamp != NULL) {
             int resp = time_diff(req, full_path);
             if (resp == -1) {
@@ -203,7 +187,7 @@ void handler(int socket, struct Request *req, char* root_address) {
             }
         }
 
-        char* response = compile_response(req, OK, file_size, full_path, last_modify); //generate response
+        char* response = compile_response(req, OK, file_size, full_path); //generate response
         send(socket, response, strlen(response), 0);
 
         while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
@@ -234,14 +218,15 @@ void free_memory(struct Request *req) {
         free(req->type);
     }
 
-    if (req->accept != NULL) {
-        free(req->accept);
-    }
-
     if (req->if_modified_timestamp != NULL) {
         free(req->if_modified_timestamp);
     }
 
+    req->accept = NULL;
+    req->filetype = NULL;
+    req->filetype = NULL;
+    req->type = NULL;
+    req->if_modified_timestamp = NULL;
 }
 
 /*
