@@ -31,9 +31,9 @@ int main( int argc, char *argv[] )  {
 
     int server, new_socket;
     struct sockaddr_in serverAddress;
-    struct Request request;
+    struct Header header;
 
-    request.http_version = 0;
+    header.http_version = 0;
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
@@ -66,17 +66,17 @@ int main( int argc, char *argv[] )  {
         char buffer[30000];
         read(new_socket, buffer, 30000);
 
-        get_header(&request, buffer);
+        get_header(&header, buffer);
 
         //take out the last / if it exists because we add it in request filename.
         if (root_address[strlen(root_address) - 1] == '/') {
             root_address[strlen(root_address) - 1] = '\0';
         }
         printf("root_address: %s\n", root_address);
-        handler(new_socket, &request, root_address);
+        handler(new_socket, &header, root_address);
 
         close(new_socket);
-        free_memory(&request);
+        free_memory(&header);
         //free output from compiler response
     }
 
