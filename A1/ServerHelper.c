@@ -96,16 +96,7 @@ void get_header(struct Request *req, char* header) {
 }
 
 
-
-char *last_modified( char *full_path, struct Request *req ) {
-    //Fri, 08 Aug 2003 08:12:31 GMT
-    char *output = (char *) malloc(100 * sizeof(char));
-    char *last_modified_time = (char *) malloc(100 * sizeof(char));
-    struct stat attr;
-    stat(full_path, &attr);
-
-    strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
-
+void update_tm_struct(struct Request *req, struct tm *timestamp){
     char *month_char = (char *) malloc(3 * sizeof(char));
     char *weekday = (char *) malloc(3 * sizeof(char));
     char *timezone = (char *) malloc(3 * sizeof(char));
@@ -123,13 +114,27 @@ char *last_modified( char *full_path, struct Request *req ) {
         month += 1;
     }
 
-    struct tm timestamp;
-    timestamp.tm_year = year - 1900;
-    timestamp.tm_mon = month - 1;
-    timestamp.tm_mday = day;
-    timestamp.tm_hour = hour;
-    timestamp.tm_min = min;
-    timestamp.tm_sec = sec;
+    timestamp->tm_year = year - 1900;
+    timestamp->tm_mon = month - 1;
+    timestamp->tm_mday = day;
+    timestamp->tm_hour = hour;
+    timestamp->tm_min = min;
+    timestamp->tm_sec = sec;
+
+}
+
+
+char *last_modified(struct Request *req, char *full_path) {
+    //Fri, 08 Aug 2003 08:12:31 GMT
+    char *output = (char *) malloc(100 * sizeof(char));
+    char *last_modified_time = (char *) malloc(100 * sizeof(char));
+    struct stat attr;
+    stat(full_path, &attr);
+
+    strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
+
+    struct tm timestamp; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(req, &timestamp);
 
 //    char buffer[26];
 //    char buffer2[26];
@@ -137,11 +142,11 @@ char *last_modified( char *full_path, struct Request *req ) {
 //    strftime(buffer2, 26, "%Y-%m-%d %H:%M:%S", gmtime(&attr.st_mtime));
 //    printf("buffer: %s \nbuffer2: %s\n", buffer, buffer2);
 
-    strcpy(output, LAST_MODIFIED);
-    strcat(output, last_modified_time);
 
     //problem with reading timestamps TODO
     if ( &timestamp <= gmtime(&attr.st_mtime) ) {
+        strcpy(output, LAST_MODIFIED);
+        strcat(output, last_modified_time);
         printf("%s is older than %s\n", req->if_modified_timestamp, last_modified_time);
         return output;
     } else {  //( &timestamp > gmtime(&attr.st_mtime) )
