@@ -8,7 +8,7 @@ FLAGS = -Wall -Werror -std=c99
 %.o: %.c
 	gcc ${CFLAGS} -c $<
 
-SimpleServer: SimpleServer.o Helper.o
+SimpleServer: SimpleServer.o ServerHelper.o Parser.o
 	gcc ${FLAGS} -o $@ $<
 
 PersistentServer: PersistentServer.o PersistentHelper.o
@@ -17,7 +17,7 @@ PersistentServer: PersistentServer.o PersistentHelper.o
 PipelinedServer: PipelinedServer.c
 	gcc ${FLAGS} -o $@ $<
 
-test: Test.o Helper.o
+test: Test.o ServerHelper.o Parser.o
 	gcc ${FLAGS} -o $@ $<
 
 all: clean SimpleServer PersistentServer PipelinedServer test
