@@ -26,7 +26,7 @@ void get_header(struct Request *req, char* header) {
         strcpy(extract_token,token);
 
         //PULL FILENAME + FILE TYPE
-        if(contains(extract_token, strlen(extract_token), GET, strlen(GET))==0)
+        if(contains(extract_token, GET)==0)
         {
             //get filename
             req->filename = malloc(sizeof(char)*(strlen(extract_token)));
@@ -48,7 +48,7 @@ void get_header(struct Request *req, char* header) {
             if(strcmp(file_type, JPG) == 0) {
                 req->type = malloc(sizeof(char)*(strlen(IMAGE)));
                 strcpy(req->type, IMAGE);
-            } else { //filetype is html, css, txt or js, NOTE: might be an issue if we want to handle additional extensions, IDEA: send BAD REQUEST if not html css txt or js
+            } else { // TODO filetype is html, css, txt or js, NOTE: might be an issue if we want to handle additional extensions, IDEA: send BAD REQUEST if not html css txt or js
                 req->type = malloc(sizeof(char)*(strlen(TEXT)));
                 strcpy(req->type, TEXT);
             }
@@ -57,25 +57,20 @@ void get_header(struct Request *req, char* header) {
         }
 
         //PULL ACCEPT
-        if(contains(extract_token, strlen(extract_token), ACCEPT, strlen(ACCEPT))==0)
+        if(contains(extract_token, ACCEPT)==0)
         {
-            //check if accept field is not empty
             //TODO NEED TO FIX AND TEST
-            if(contains(extract_token, strlen(extract_token), ACCEPT_EMPTY, strlen(ACCEPT_EMPTY))!=0) {
+            //check if accept field is not empty
+            if(contains(extract_token, ACCEPT_EMPTY)!=0) {
                 req->accept = malloc(sizeof(char)*(strlen(extract_token)));
-                char *accept_strtok_pointer = NULL;
-                char *accept_token = strtok_r(extract_token, " ", &accept_strtok_pointer);
-                //accept_token = strtok_r(NULL, ACCEPT, &accept_strtok_pointer);
-                strcpy(req->accept, accept_token);
-                int x = 0;
-                while (x< strlen(extract_token)){
-                    printf("char:__%c__",extract_token[x+4]);
-                    x++;
-                }
+                char *accept_extract = malloc(sizeof(char)*(strlen(extract_token)));
+                sscanf(extract_token,"%*s %s", accept_extract);
+                strcpy(req->accept, accept_extract);
+                printf("Accept: |%s|\n", req->accept);
             }
         }
         //PULL CONDITIONAL (Currently only if modified)
-        if(contains(extract_token, strlen(extract_token), IF_MODIFIED, strlen(IF_MODIFIED))==0)
+        if(contains(extract_token, IF_MODIFIED)==0)
         {
             printf("extract token if modifeid: %s\n", extract_token);
             char *output = malloc(sizeof(char)*(strlen(extract_token)));
@@ -202,13 +197,32 @@ void handler(int socket, struct Request *req, char* root_address) {
     free(full_path);
 }
 
+// TODO add more
 void free_memory(struct Request *req) {
     if (req->accept != NULL) {
         free(req->accept);
     }
+
     if (req->filename != NULL) {
         free(req->filename);
     }
+
+    if (req->filetype != NULL) {
+        free(req->filetype);
+    }
+
+    if (req->type != NULL) {
+        free(req->type);
+    }
+
+    if (req->accept != NULL) {
+        free(req->accept);
+    }
+
+    if (req->if_modified_timestamp != NULL) {
+        free(req->if_modified_timestamp);
+    }
+
 }
 
 /*

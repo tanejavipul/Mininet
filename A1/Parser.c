@@ -70,7 +70,9 @@ struct Request {
 /*
  * Returns 0 if word found in string else -1
  */
-int contains(char* string, int string_len, char* word, int word_len) {
+int contains(char* string, char* word) {
+    int string_len = strlen(string);
+    int word_len = strlen(word);
     int x = 0;
     int count = 0;
     while (x < string_len){
