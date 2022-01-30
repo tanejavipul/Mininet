@@ -137,27 +137,32 @@ char *last_modified(struct Request *req, char *full_path) {
 
     strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
 
-    struct tm timestamp; // malloc(sizeof(struct tm)); may need to malloc
-    update_tm_struct(req, &timestamp);
-
-//    printf("timestamp: %s\n", asctime (&timestamp));
-//    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
-
-
-    double diff = difftime(mktime(&timestamp), mktime(gmtime(&attr.st_mtime)));
-
-    if ( diff > 0 ) {
-        printf("%s is newer than %s\n", req->if_modified_timestamp, last_modified_time);
-        return NULL;
-    } else {
-        printf("%s is older than %s\n", req->if_modified_timestamp, last_modified_time);
-        strcpy(output, LAST_MODIFIED);
-        strcat(output, last_modified_time);
-        return output;
-    }
+    strcpy(output, LAST_MODIFIED);
+    strcat(output, last_modified_time);
+    return output;
 }
 
 
+int time_diff (struct Request *req, char *full_path ) {
+    //    printf("timestamp: %s\n", asctime (&timestamp));
+    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
+
+    struct stat attr;
+    stat(full_path, &attr);
+
+    struct tm timestamp; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(req, &timestamp);
+    double diff = difftime(mktime(&timestamp), mktime(gmtime(&attr.st_mtime)));
+
+    if ( diff > 0 ) {
+        printf("%s is newer than %s\n", req->if_modified_timestamp, asctime (gmtime(&attr.st_mtime)));
+        //failed
+        return -1;
+    } else {
+        printf("%s is older than %s\n", req->if_modified_timestamp, asctime (gmtime(&attr.st_mtime)));
+        return 0;
+    }
+}
 
 /*
  *
@@ -181,14 +186,21 @@ void handler(int socket, struct Request *req, char* root_address) {
         stat(full_path, &st);
         long file_size = st.st_size;
 
-        //if modified since
         char *last_modify = last_modified(req, full_path);
-        if (last_modify == NULL) {
-            //Write is not working sending bad response TODO
-            write (socket, "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>", strlen("HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>"));
-            printf("wrote 304\n");
-            free(full_path);
-            return;
+        //Works but when you add an if-modified header then remove it in same session for some reason it still thinks req->if_modified_timestamp
+        //has a buffer even though we free it at the end so it will go into this if statement and won't technically be null TODO
+        //could be an issue with free and the while loop?
+        if (req->if_modified_timestamp != NULL) {
+            int resp = time_diff(req, full_path);
+            if (resp == -1) {
+                //Write is not working sending bad response TODO
+                write(socket,
+                      "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>",
+                      strlen("HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>"));
+                printf("wrote 304\n");
+                free(full_path);
+                return;
+            }
         }
 
         char* response = compile_response(req, OK, file_size, full_path, last_modify); //generate response
