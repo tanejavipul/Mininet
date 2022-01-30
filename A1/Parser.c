@@ -63,8 +63,8 @@ struct Header {
     char* filetype;
     char* type;
     int http_version; // 0 = HTTP/1.0 or 1 = HTTP/1.1
-    char* if_modified_timestamp;
     char* if_modified_since;
+    char* if_unmodified_since;
 };
 
 
@@ -205,13 +205,13 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
 
 
 
-void update_tm_struct(struct Header *header, struct tm *timestamp){
+void update_tm_struct(char *extract_time, struct tm *timestamp){
     char *month_char = (char *) malloc(3 * sizeof(char));
     char *weekday_char = (char *) malloc(3 * sizeof(char));
     char *timezone = (char *) malloc(3 * sizeof(char));
 
     int year, day, hour, min, sec;
-    sscanf(header->if_modified_since, "%s %d %s %d %d:%d:%d %s", weekday_char, &day, month_char, &year, &hour, &min, &sec, timezone );
+    sscanf(extract_time, "%s %d %s %d %d:%d:%d %s", weekday_char, &day, month_char, &year, &hour, &min, &sec, timezone );
     //take out the , in the weekday
     weekday_char[strlen(weekday_char)-1] = '\0';
 //    printf("weekday_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", weekday_char, day, year, hour, min, sec);

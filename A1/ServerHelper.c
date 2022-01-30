@@ -67,12 +67,13 @@ void get_header(struct Header *header, char* input) {
                 sscanf(extract_token,"%*s %s", accept_extract);
                 strcpy(header->accept, accept_extract);
                 printf("Accept: |%s|\n", header->accept);
+                free(accept_extract);
             }
         }
         //PULL CONDITIONAL (Currently only if modified)
         if(contains(extract_token, IF_MODIFIED)==0)
         {
-            printf("extract token if modifeid: %s\n", extract_token);
+            printf("extract token if modified: %s\n", extract_token);
             char *output = malloc(sizeof(char)*(strlen(extract_token)));
             sscanf(extract_token, "If-Modified-Since: %[^\\t\\n]", output);
             printf("hello\n");
@@ -80,6 +81,19 @@ void get_header(struct Header *header, char* input) {
             header->if_modified_since = malloc(sizeof(char)*(strlen(output)));
             printf("if_modified_since : %s\n", output);
             strcpy(header->if_modified_since, output);
+            free(output);
+        }
+        if(contains(extract_token, IF_UNMODIFIED)==0)
+        {
+            printf("extract token if unmodified: %s\n", extract_token);
+            char *output = malloc(sizeof(char)*(strlen(extract_token)));
+            sscanf(extract_token, "If-Un-Modified-Since: %[^\\t\\n]", output);
+            printf("hello\n");
+
+            header->if_unmodified_since = malloc(sizeof(char)*(strlen(output)));
+            printf("if_modified_since : %s\n", output);
+            strcpy(header->if_unmodified_since, output);
+            free(output);
         }
 
         printf(" %s \n", token);
@@ -101,7 +115,7 @@ int if_modified_since_time_diff (struct Header *header, char *full_path) {
 
     // header modified time
     struct tm header_modified_time; // malloc(sizeof(struct tm)); may need to malloc
-    update_tm_struct(header, &header_modified_time);
+    update_tm_struct(header->if_modified_since, &header_modified_time);
 
     double diff = difftime(mktime(&header_modified_time), mktime(gmtime(&file_modified_time.st_mtime)));
 
@@ -114,6 +128,36 @@ int if_modified_since_time_diff (struct Header *header, char *full_path) {
         return 0;
     }
 }
+
+int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
+    //    printf("timestamp: %s\n", asctime (&timestamp));
+    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
+    printf("starting time diff last modified\n");
+
+
+    // file modified time
+    struct stat file_unmodified_time;
+    stat(full_path, &file_unmodified_time);
+
+    // header modified time
+    struct tm header_unmodified_time; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(header->if_unmodified_since, &header_unmodified_time);
+
+    double diff = difftime(mktime(&header_unmodified_time), mktime(gmtime(&file_unmodified_time.st_mtime)));
+
+    if ( diff < 0 ) {
+        printf("%s is newer than %s\n", header->if_modified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        //failed
+        return -1;
+    } else {
+        printf("%s is older than %s\n", header->if_modified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        return 0;
+    }
+}
+
+
+
+
 
 /*
  *
