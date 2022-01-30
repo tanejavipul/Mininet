@@ -30,23 +30,22 @@ void get_header(struct Request *req, char* header) {
         {
             //get filename
             req->filename = malloc(sizeof(char)*(strlen(extract_token)));
-            char *get_strtok_pointer = NULL;
-            char *get_token = strtok_r(extract_token, WHITE_SPACE, &get_strtok_pointer);
-            get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
-            strcpy(req->filename, get_token);
-            
-            //get filetype
-            //FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
             req->filetype = malloc(sizeof(char)*(strlen(extract_token)));
-            char *get_strtok_pointer2 = NULL;
-            char *get_file_token = strtok_r(get_token, ".", &get_strtok_pointer2);
-            get_file_token = strtok_r(NULL, ".", &get_strtok_pointer2);
 
-            printf("get_token file name : %s\n", get_file_token);
-            strcpy(req->filetype, get_file_token);
+            char *file_name = (char *) malloc(sizeof(char) * strlen(extract_token));
+            char *file_type;
+            sscanf(extract_token,"%*s %s %*s",file_name);
+            strcpy(req->filename, file_name);
 
+            // TODO FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
+            // TODO strrchr return null if it cant find char
+            file_type = strrchr(file_name, '.');
+            strcpy(req->filetype, &file_type[1]); //to get rid of '.' char
 
-            if(strcmp(get_file_token, JPG) == 0) {
+            printf("Filename: |%s| Filetype: |%s|\n",req->filename,req->filetype);
+
+            // TODO need to add support for JPEG and JPG not just JPG
+            if(strcmp(file_type, JPG) == 0) {
                 req->type = malloc(sizeof(char)*(strlen(IMAGE)));
                 strcpy(req->type, IMAGE);
             } else { //filetype is html, css, txt or js, NOTE: might be an issue if we want to handle additional extensions, IDEA: send BAD REQUEST if not html css txt or js
@@ -54,6 +53,7 @@ void get_header(struct Request *req, char* header) {
                 strcpy(req->type, TEXT);
             }
 
+            free(file_name);
         }
 
         //PULL ACCEPT

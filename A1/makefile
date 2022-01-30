@@ -17,7 +17,7 @@ PersistentServer: PersistentServer.o PersistentHelper.o
 PipelinedServer: PipelinedServer.c
 	gcc ${FLAGS} -o $@ $<
 
-test: Test.o ServerHelper.o Parser.o
+test: Test.o
 	gcc ${FLAGS} -o $@ $<
 
 all: clean SimpleServer PersistentServer PipelinedServer test
