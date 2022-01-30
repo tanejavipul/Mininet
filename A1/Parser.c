@@ -148,15 +148,15 @@ char *content_length(int length) {
 
 
 
-char *compile_response(struct Request *req, char *status, int length, char *full_path) {
+char *compile_response(struct Request *req, char *status, int length, char *full_path, char *last_modified) {
     char *status_r = status_response(req, status);
     char *date = date_response();
     char *content_t = content_type(req);
     char *content_len = content_length(length);
-    //char *last_modify = last_modified(full_path, req);
+    char *last_modify = last_modified;
 
     int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len);
-    //total += strlen(last_modify)
+    total += strlen(last_modify);
     char *output = malloc(sizeof(char)*total + 1000);
 
     // do the copy and concat
@@ -164,7 +164,7 @@ char *compile_response(struct Request *req, char *status, int length, char *full
     strcat(output,date); // or strncat
     //do we need server?
     strcat(output,MIME);
-    //strcat(output,last_modify);
+    strcat(output,last_modify);
     strcat(output,content_t);
     strcat(output,content_len);
     strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
@@ -178,8 +178,6 @@ char *compile_response(struct Request *req, char *status, int length, char *full
     free(date);
     free(content_t);
     free(content_len);
-    //Can't free this for some reason
-    //free(last_modify);
     printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }

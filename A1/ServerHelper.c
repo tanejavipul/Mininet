@@ -93,29 +93,38 @@ void get_header(struct Request *req, char* header) {
 
 void update_tm_struct(struct Request *req, struct tm *timestamp){
     char *month_char = (char *) malloc(3 * sizeof(char));
-    char *weekday = (char *) malloc(3 * sizeof(char));
+    char *weekday_char = (char *) malloc(3 * sizeof(char));
     char *timezone = (char *) malloc(3 * sizeof(char));
 
     int year, day, hour, min, sec;
-    sscanf(req->if_modified_timestamp, "%s %d %s %d %d:%d:%d %s", weekday, &day, month_char, &year, &hour, &min, &sec, timezone );
-//    printf("month_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", month_char, day, year, hour, min, sec);
+    sscanf(req->if_modified_timestamp, "%s %d %s %d %d:%d:%d %s", weekday_char, &day, month_char, &year, &hour, &min, &sec, timezone );
+    //take out the , in the weekday
+    weekday_char[strlen(weekday_char)-1] = '\0';
+//    printf("weekday_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", weekday_char, day, year, hour, min, sec);
 
     int month = 0;
-    for (int i = 0; MONTH[i] != NULL; i++) {
+    for ( int i = 0; MONTH[i] != NULL; i++) {
         if (strcmp(MONTH[i], month_char) == 0) {
             month += 1;
             break;
         }
         month += 1;
     }
+    int weekday = 0;
+    for ( int i = 0; DAYS_OF_WEEK[i] != NULL; i++) {
+        if (strcmp(DAYS_OF_WEEK[i], weekday_char) == 0) {
+            break;
+        }
+        weekday += 1;
+    }
 
+    timestamp->tm_wday = weekday;
     timestamp->tm_year = year - 1900;
     timestamp->tm_mon = month - 1;
     timestamp->tm_mday = day;
     timestamp->tm_hour = hour;
     timestamp->tm_min = min;
     timestamp->tm_sec = sec;
-
 }
 
 
@@ -131,22 +140,20 @@ char *last_modified(struct Request *req, char *full_path) {
     struct tm timestamp; // malloc(sizeof(struct tm)); may need to malloc
     update_tm_struct(req, &timestamp);
 
-//    char buffer[26];
-//    char buffer2[26];
-//    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", &timestamp);
-//    strftime(buffer2, 26, "%Y-%m-%d %H:%M:%S", gmtime(&attr.st_mtime));
-//    printf("buffer: %s \nbuffer2: %s\n", buffer, buffer2);
+//    printf("timestamp: %s\n", asctime (&timestamp));
+//    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
 
 
-    //problem with reading timestamps TODO
-    if ( &timestamp <= gmtime(&attr.st_mtime) ) {
-        strcpy(output, LAST_MODIFIED);
-        strcat(output, last_modified_time);
-        printf("%s is older than %s\n", req->if_modified_timestamp, last_modified_time);
-        return output;
-    } else {  //( &timestamp > gmtime(&attr.st_mtime) )
+    double diff = difftime(mktime(&timestamp), mktime(gmtime(&attr.st_mtime)));
+
+    if ( diff > 0 ) {
         printf("%s is newer than %s\n", req->if_modified_timestamp, last_modified_time);
         return NULL;
+    } else {
+        printf("%s is older than %s\n", req->if_modified_timestamp, last_modified_time);
+        strcpy(output, LAST_MODIFIED);
+        strcat(output, last_modified_time);
+        return output;
     }
 }
 
@@ -162,16 +169,6 @@ void handler(int socket, struct Request *req, char* root_address) {
     strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
     strcat(full_path, file_name);
 
-    //if modified since
-//    if (last_modified(full_path, req) == NULL) {
-//        //Write is not working sending bad response TODO
-//        write(socket,"HTTP/1.0 304\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304</body></html>",
-//              strlen("HTTP/1.0 304\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304</body></html>"));
-//        printf("wrote 304\n");
-//        free(full_path);
-//        return;
-//    }
-
     int fp;
     if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
     {
@@ -184,7 +181,17 @@ void handler(int socket, struct Request *req, char* root_address) {
         stat(full_path, &st);
         long file_size = st.st_size;
 
-        char* response = compile_response(req, OK, file_size, full_path); //generate response
+        //if modified since
+        char *last_modify = last_modified(req, full_path);
+        if (last_modify == NULL) {
+            //Write is not working sending bad response TODO
+            write (socket, "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>", strlen("HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>"));
+            printf("wrote 304\n");
+            free(full_path);
+            return;
+        }
+
+        char* response = compile_response(req, OK, file_size, full_path, last_modify); //generate response
         send(socket, response, strlen(response), 0);
 
         while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
