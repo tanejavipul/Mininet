@@ -22,9 +22,10 @@ char *WHITE_SPACE = " ";
 char *ACCEPT_EMPTY = "*/*";
 //Conditionals
 char *IF_MATCH = "If-Match:";
-
+char *IF_NONE_MATCH = "If-None-Match:";
 char *IF_MODIFIED = "If-Modified-Since:";
-
+char *IF_UNMODIFIED = "If-Unmodified-Since:";
+char *IF_RANGE = "If-Range:";
 
 //Response
 char *HTTP11 = "HTTP/1.1";
@@ -38,6 +39,7 @@ char *CONTENT_TYPE = "Content-Type:";
 char *CONTENT_LENGTH = "Content-Length:";
 char *DATE = "Date:";
 char *MIME = "MIME-version: 1.0\r\n";
+char *LAST_MODIFIED = "Last-Modified: ";
 
 //FileType
 char *JPG = "jpg";
@@ -67,6 +69,7 @@ struct Request {
     char* filetype;
     char* type;
     int http_version; // 0 = HTTP/1.0 or 1 = HTTP/1.1
+    char* if_modified_timestamp;
 };
 
 
@@ -157,27 +160,19 @@ void get_header(struct Request *req, char* header) {
                 }
             }
         }
-
-        //PULL CONDITIONAL NOT DONE
+        //PULL CONDITIONAL (Currently only if modified)
         if(contains(extract_token, strlen(extract_token), IF_MODIFIED, strlen(IF_MODIFIED))==0)
         {
-            //get filename
-            req->filename = malloc(sizeof(char)*(strlen(extract_token)));
-            char *get_strtok_pointer = NULL;
-            char *get_token = strtok_r(extract_token, WHITE_SPACE, &get_strtok_pointer);
-            get_token = strtok_r(NULL, WHITE_SPACE, &get_strtok_pointer);
-            strcpy(req->filename, get_token);
+            printf("extract token if modifeid: %s\n", extract_token);
+            char *output = malloc(sizeof(char)*(strlen(extract_token)));
+            sscanf(extract_token, "If-Modified-Since: %[^\\t\\n]", output);
 
-            //get filetype
+            req->if_modified_timestamp = malloc(sizeof(char)*(strlen(output)));
+            printf("if_modified_timestamp : %s\n", output);
+            strcpy(req->if_modified_timestamp, output);
 
-            //FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
-            req->filetype = malloc(sizeof(char)*(strlen(extract_token)));
-            char *get_strtok_pointer2 = NULL;
-            char *get_file_token = strtok_r(get_token, ".", &get_strtok_pointer2);
-            get_file_token = strtok_r(NULL, ".", &get_strtok_pointer2);
-
-            printf("get_token file name : %s\n", get_file_token);
-            strcpy(req->filetype, get_file_token);
+            struct tm *time;
+            strftime(output, 100, "%a, %d %b %Y %X %Z", time);
         }
 
         printf(" %s \n", token);
@@ -201,93 +196,58 @@ void css_jpg_write(int socket, char* full_path) {
     }
 }
 
-char *last_modified( char *full_path ) {
+char *last_modified( char *full_path, struct Request *req ) {
     //Fri, 08 Aug 2003 08:12:31 GMT
-    char *output = (char *)malloc(100 * sizeof(char));
-    printf("we in?\n");
+    char *output = (char *) malloc(100 * sizeof(char));
+    char *last_modified_time = (char *) malloc(100 * sizeof(char));
     struct stat attr;
     stat(full_path, &attr);
 
-    strftime(output, 100, "%a, %d %b %Y %X %Z", localtime(&attr.st_mtime));
+    strftime(last_modified_time, 100, "%a, %d %b %Y %X %Z\r\n", gmtime(&attr.st_mtime));
 
-    printf("LAST_MODIFIED + UPDATE: %s\n", output);
-    return output;
+    char *month_char = (char *) malloc(3 * sizeof(char));
+    char *weekday = (char *) malloc(3 * sizeof(char));
+    char *timezone = (char *) malloc(3 * sizeof(char));
+
+    int year, day, hour, min, sec;
+    sscanf(req->if_modified_timestamp, "%s %d %s %d %d:%d:%d %s", weekday, &day, month_char, &year, &hour, &min, &sec, timezone );
+//    printf("month_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", month_char, day, year, hour, min, sec);
+
+    int month = 0;
+    for ( int i = 0; MONTH[i] != NULL; i++) {
+        if (strcmp(MONTH[i], month_char) == 0) {
+            month += 1;
+            break;
+        }
+        month += 1;
+    }
+
+    struct tm timestamp;
+    timestamp.tm_year = year - 1900;
+    timestamp.tm_mon = month - 1;
+    timestamp.tm_mday = day;
+    timestamp.tm_hour = hour;
+    timestamp.tm_min = min;
+    timestamp.tm_sec = sec;
+
+//    char buffer[26];
+//    char buffer2[26];
+//    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", &timestamp);
+//    strftime(buffer2, 26, "%Y-%m-%d %H:%M:%S", gmtime(&attr.st_mtime));
+//    printf("buffer: %s \nbuffer2: %s\n", buffer, buffer2);
+
+    strcpy(output, LAST_MODIFIED);
+    strcat(output, last_modified_time);
+
+    //problem with reading timestamps TODO
+    if ( &timestamp < gmtime(&attr.st_mtime) ) {
+        printf("%s is older than %s\n", req->if_modified_timestamp, last_modified_time);
+        return output;
+    } else if ( &timestamp > gmtime(&attr.st_mtime) ) {
+        printf("%s is newer than %s\n", req->if_modified_timestamp, last_modified_time);
+        return NULL;
+    }
 }
-
-/*
- *
- */
-void handler(int socket, struct Request *req, char* root_address) {
-    char* file_name = req->filename;
-    char *full_path = (char *)malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
-
-    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
-    strcat(full_path, file_name);
-    char *modified_time_stamp = last_modified(full_path);
-
-    if(strcmp(req->filetype, HTML) == 0) {
-        FILE *fp;
-        fp = fopen(full_path, "r");
-        if (fp != NULL) //FILE FOUND
-        {
-            char *buffer;
-            puts("File Found.");
-
-            fseek(fp, 0, SEEK_END); // Find the file size.
-            long bytes_read = ftell(fp);
-            fseek(fp, 0, SEEK_SET);
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n", 44, 0); // Send the header for succesful respond.
-            buffer = (char *)malloc(bytes_read * sizeof(char));
-
-            fread(buffer, bytes_read, 1, fp); // Read the html file to buffer.
-            write (socket, buffer, bytes_read); // Send the content of the html file to client.
-
-            free(buffer);
-            fclose(fp);
-        }
-    }
-    else if(strcmp(req->filetype, JPG) == 0) {
-        int fp;
-        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
-        {
-            puts("Image Found.");
-            int bytes;
-            char buffer[BUFFER_SIZE];
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
-            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
-                write (socket, buffer, bytes); // Send the part of the jpeg to client.
-            close(fp);
-        }
-
-    }
-    else if(strcmp(req->filetype, CSS) == 0)
-    {
-        int fp;
-        if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
-        {
-            puts("CSS Found.");
-            int bytes;
-            char buffer[BUFFER_SIZE];
-
-            send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/css\r\n\r\n", 45, 0);
-            while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
-                write (socket, buffer, bytes); // Send the part of the jpeg to client.
-            close(fp);
-        }
-
-    }
-    else // If there is not such a file.
-    {
-        write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
-    }
-
-    free(full_path);
-}
-
-
-
 
 char *status_response( struct Request *req, char *status){
     // HTTP/1.0 200 OK
@@ -300,7 +260,6 @@ char *status_response( struct Request *req, char *status){
     }
     else{
         snprintf(output, x, "%s %s %s", HTTP11,status,END_OF_LINE); //HTTP 1.1
-
     }
 
     printf("STATUS_RESPONSE: %s",output);
@@ -337,22 +296,24 @@ char *content_length(int length) {
 
     printf("CONTENT_LENGTH_RESPONSE: %s",output);
     return output;
-
 }
 
-char *compile_response(struct Request *req, char *status, int length) {
+char *compile_response(struct Request *req, char *status, int length, char *full_path) {
     char *status_r = status_response(req, status);
     char *date = date_response();
     char *content_t = content_type(req);
     char *content_len = content_length(length);
+    char *last_modify = last_modified(full_path, req);
 
-    int total = strlen(status_r) + strlen(date) + strlen(MIME) + strlen(content_t) + strlen(content_len);
+    int total = strlen(status_r) + strlen(date) + strlen(MIME) + strlen(last_modify) + strlen(content_t) + strlen(content_len);
     char *output = malloc(sizeof(char)*total + 1000);
 
     // do the copy and concat
     strcpy(output, status_r);
     strcat(output,date); // or strncat
+    //do we need server?
     strcat(output,MIME);
+    strcat(output,last_modify);
     strcat(output,content_t);
     strcat(output,content_len);
     strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
@@ -361,6 +322,8 @@ char *compile_response(struct Request *req, char *status, int length) {
     free(date);
     free(content_t);
     free(content_len);
+    //Can't free this for some reason
+    //free(last_modify);
     printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }
@@ -375,6 +338,16 @@ void handler(int socket, struct Request *req, char* root_address) {
     strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
     strcat(full_path, file_name);
 
+    //if modified since
+    if (last_modified(full_path, req) == NULL) {
+        //Write is not working sending bad response TODO
+        write(socket,"HTTP/1.0 304\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304</body></html>",
+              strlen("HTTP/1.0 304\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304</body></html>"));
+        printf("wrote 304\n");
+        free(full_path);
+        return;
+    }
+
     int fp;
     if ((fp=open(full_path, O_RDONLY)) > 0) //FILE FOUND
     {
@@ -387,7 +360,7 @@ void handler(int socket, struct Request *req, char* root_address) {
         stat(full_path, &st);
         long file_size = st.st_size;
 
-        char* response = compile_response(req, OK, file_size); //generate response
+        char* response = compile_response(req, OK, file_size, full_path); //generate response
         send(socket, response, strlen(response), 0);
 
         while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // Read the file to buffer. If not the end of the file, then continue reading the file
