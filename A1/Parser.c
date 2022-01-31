@@ -243,6 +243,57 @@ void update_tm_struct(char *extract_time, struct tm *timestamp){
 }
 
 
+int if_modified_since_time_diff (struct Header *header, char *full_path) {
+    //    printf("timestamp: %s\n", asctime (&timestamp));
+    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
+    printf("starting time diff last modified\n");
+
+
+    // file modified time
+    struct stat file_modified_time;
+    stat(full_path, &file_modified_time);
+
+    // header modified time
+    struct tm header_modified_time; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(header->if_modified_since, &header_modified_time);
+
+    double diff = difftime(mktime(&header_modified_time), mktime(gmtime(&file_modified_time.st_mtime)));
+
+    if ( diff > 0 ) {
+        printf("%s is newer than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
+        //failed
+        return -1;
+    } else {
+        printf("%s is older than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
+        return 0;
+    }
+}
+
+int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
+    //    printf("timestamp: %s\n", asctime (&timestamp));
+    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
+    printf("starting time diff last modified\n");
+
+
+    // file modified time
+    struct stat file_unmodified_time;
+    stat(full_path, &file_unmodified_time);
+
+    // header modified time
+    struct tm header_unmodified_time; // malloc(sizeof(struct tm)); may need to malloc
+    update_tm_struct(header->if_unmodified_since, &header_unmodified_time);
+
+    double diff = difftime(mktime(&header_unmodified_time), mktime(gmtime(&file_unmodified_time.st_mtime)));
+
+    if ( diff < 0 ) {
+        printf("%s is newer than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        //failed
+        return -1;
+    } else {
+        printf("%s is older than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        return 0;
+    }
+}
 
 
 
