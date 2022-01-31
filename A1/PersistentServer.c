@@ -1,4 +1,4 @@
-#include "PersistentHelper.c"
+#include "ServerHelper.c"
 
 /*
 HTTP/1.0 200 OK
@@ -31,10 +31,10 @@ int main( int argc, char *argv[] )  {
 
     int server, new_socket;
     struct sockaddr_in serverAddress;
-    struct Request request;
+    struct Header header;
 
-    request.http_version = 1; //TODO: fix, cant hardcode for Persistent server, need to parse header for version
-    request.connectiontype = TYPE_KEEPALIVE; //REMOVE AFTER YOU POPULATE THIS VALUE IN PersistentHelper.c
+    header.http_version = 1; //TODO: fix, cant hardcode for Persistent server, need to parse header for version
+    header.connectiontype = TYPE_KEEPALIVE; //REMOVE AFTER YOU POPULATE THIS VALUE IN ServerHelper.c
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
@@ -90,22 +90,22 @@ int main( int argc, char *argv[] )  {
         char buffer[30000];
         read(new_socket, buffer, 30000);
 
-        get_header(&request, buffer);
+        get_header(&header, buffer);
 
         //take out the last / if it exists because we add it in request filename.
         if (root_address[strlen(root_address) - 1] == '/') {
             root_address[strlen(root_address) - 1] = '\0';
         }
         printf("root_address: %s\n", root_address);
-        handler(new_socket, &request, root_address);
+        handler(new_socket, &header, root_address);
 
 
-        if( strcmp(request.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a request"
+        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
             close(new_socket);
             printf("CONNECTION CLOSED\n");
         }
 
-        free_memory(&request);
+        free_memory(&header);
         //close(new_socket);
 
     }

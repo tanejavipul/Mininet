@@ -42,6 +42,12 @@ char *DATE = "Date:";
 char *MIME = "MIME-version: 1.0\r\n";
 char *LAST_MODIFIED = "Last-Modified: ";
 
+//Request and Response
+char* CONNECTION = "Connection:";
+char* KEEP_ALIVE = "Keep-Alive: timeout="; //header to specify timeout time
+char* TYPE_KEEPALIVE = "keep-alive";
+char* TYPE_CLOSE = "close";
+
 //FileType
 char *JPG = "jpg";
 char *HTML = "html";
@@ -65,6 +71,7 @@ struct Header {
     int http_version; // 0 = HTTP/1.0 or 1 = HTTP/1.1
     char* if_modified_since;
     char* if_unmodified_since;
+    char* connectiontype;
 };
 
 
@@ -147,6 +154,25 @@ char *content_length(int length) {
     return output;
 }
 
+char *connection_type(struct Header *header) {
+    char *output = (char *)malloc(100 * sizeof(char));
+
+    snprintf(output, 100, "%s %s%s", CONNECTION,header->connectiontype,END_OF_LINE);
+
+    printf("CONNECTION_RESPONSE: %s",output);
+    return output;
+
+}
+
+char *keepalive_time() {
+    char *output = (char *)malloc(100 * sizeof(char));
+
+    snprintf(output, 100, "%s%d%s", KEEP_ALIVE,300,END_OF_LINE);
+
+    printf("KEEPALIVE_RESPONSE: %s",output);
+    return output;
+
+}
 
 // returns last modified of file
 char *last_modified_response(char *full_path) {
@@ -171,9 +197,10 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     char *content_t = content_type(header);
     char *content_len = content_length(length);
     char *last_modify = last_modified_response(full_path);
+    char *connection_t = connection_type(header);
+    char *keepalive = keepalive_time();
 
-
-    int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len);
+    int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len) + strlen(connection_t) + strlen(keepalive) + strlen(last_modify);
     total += strlen(last_modify);
     char *output = malloc(sizeof(char)*total + 1000);
 
@@ -185,18 +212,21 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     strcat(output,last_modify);
     strcat(output,content_t);
     strcat(output,content_len);
+    strcat(output, connection_t);
+    //Leaving this out for now
+//    if (strcmp(header->connectiontype, TYPE_KEEPALIVE) == 0) {
+//        strcat(output, keepalive); //only add this header if connection type is keep-alive, it is possible for 1.1 header to pass connection: close
+//    }
     strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
 
-    if(header->http_version == 1)
-    {
-        //add keep alive
-    }
 
     free(status_r);
     free(date);
     free(content_t);
     free(content_len);
     free(last_modify);
+    free(connection_t);
+    free(keepalive);
     printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }

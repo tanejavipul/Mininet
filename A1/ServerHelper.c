@@ -97,6 +97,20 @@ void get_header(struct Header *header, char* input) {
             free(output);
         }
 
+        //TODO: PULL HTTP VERSION, copy into req->http_version
+
+        //TODO: PULL Connection: header, populate header->connectiontype
+        //SEMI PSEUDO CODE FOR POPULATING req->connectiontype
+//        if (Connection: header exists) {
+//            strcpy(req->connectiontype, header_value);
+//        } else { //no Connection: header specified, use default value based on HTTP version
+//            if (req->http_version == 0) {
+//                strcpy(req->connectiontype, TYPE_CLOSE);
+//            } else {
+//                strcpy(req->connectiontype, TYPE_KEEPALIVE)
+//            }
+//        }
+
         printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }

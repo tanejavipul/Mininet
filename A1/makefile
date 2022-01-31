@@ -11,7 +11,7 @@ FLAGS = -Wall -Werror -std=c99
 SimpleServer: SimpleServer.o ServerHelper.o Parser.o
 	gcc ${FLAGS} -o $@ $<
 
-PersistentServer: PersistentServer.o PersistentHelper.o
+PersistentServer: PersistentServer.o ServerHelper.o Parser.o
 	gcc ${FLAGS} -o $@ $<
 
 PipelinedServer: PipelinedServer.c
