@@ -51,17 +51,17 @@ int main( int argc, char *argv[] )  {
 //    }
 
     //Should be working, sets timeout on socket so the connection closes after a set time
-//    struct timeval timeout;
-//    timeout.tv_sec = 10;
-//    timeout.tv_usec = 0;
-//
-//    if (setsockopt (server, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-//                    sizeof timeout) < 0)
-//        perror("setsockopt failed\n");
-//
-//    if (setsockopt (server, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-//                    sizeof timeout) < 0)
-//        perror("setsockopt failed\n");
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+
+    if (setsockopt (server, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                    sizeof timeout) < 0)
+        perror("setsockopt failed\n");
+
+    if (setsockopt (server, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+                    sizeof timeout) < 0)
+        perror("setsockopt failed\n");
 
 
     serverAddress.sin_family = AF_INET;
@@ -87,26 +87,32 @@ int main( int argc, char *argv[] )  {
             perror("ACCEPT FAILED");
             exit(EXIT_FAILURE);
         }
+
         char buffer[30000];
-        read(new_socket, buffer, 30000);
 
-        get_header(&header, buffer);
+        while(1) {
+            int n = read(new_socket, buffer, 30000);
+            if (n <= 0) { printf("read() ends\n"); break; }
 
-        //take out the last / if it exists because we add it in request filename.
-        if (root_address[strlen(root_address) - 1] == '/') {
-            root_address[strlen(root_address) - 1] = '\0';
+            get_header(&header, buffer);
+
+            //take out the last / if it exists because we add it in request filename.
+            if (root_address[strlen(root_address) - 1] == '/') {
+                root_address[strlen(root_address) - 1] = '\0';
+            }
+            printf("root_address: %s\n", root_address);
+            handler(new_socket, &header, root_address);
+
+            if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
+                free_memory(&header);
+                break;
+            }
+
+            free_memory(&header);
         }
-        printf("root_address: %s\n", root_address);
-        handler(new_socket, &header, root_address);
 
-
-        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
-            close(new_socket);
-            printf("CONNECTION CLOSED\n");
-        }
-
-        free_memory(&header);
-        //close(new_socket);
+        printf("CONNECTION CLOSED\n");
+        close(new_socket);
 
     }
 
