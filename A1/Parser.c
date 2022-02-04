@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1024
 
@@ -61,6 +62,8 @@ char *TEXT_ANY = "text/*";
 
 char *DAYS_OF_WEEK[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 char *MONTH[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec" };
+
+
 
 
 struct Header {

@@ -11,10 +11,48 @@ Content-Length: 2345
 ** a blank line *
 <HTML> ...
  */
+
+char client_message[2000];
+char buffer[1024];
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+struct Header header;
+char* root_address;
+
+//void * socketThread(void *arg)
+//{
+//    int new_socket = *((int *)arg);
+//    char buffer[30000];
+//    int n = read(new_socket, buffer, 30000);
+//    if (n <= 0) { printf("read() ends\n"); pthread_exit(NULL); } //might exit with return value instead of null to indicate error
+//
+//    //pthread_mutex_lock(&lock);
+//    while(1) {
+//
+//        get_header(&header, buffer);
+//
+//        printf("root_address: %s\n", root_address);
+//        handler(new_socket, &header, root_address);
+//
+//        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
+//            free_memory(&header);
+//            break;
+//        }
+//
+//        free_memory(&header);
+//    }
+//    //pthread_mutex_unlock(&lock);
+//    sleep(1);
+//
+//    printf("CONNECTION CLOSED\n");
+//    close(new_socket);
+//    pthread_exit(NULL);
+//
+//}
+
 int main( int argc, char *argv[] )  {
     //Get Arguments
     int port_number = atoi(argv[1]);
-    char *root_address = argv[2];
+    root_address = argv[2];
     printf("Port Number:  %d\n", port_number);
     printf("Root Address: %s\n", root_address);
 
@@ -28,10 +66,15 @@ int main( int argc, char *argv[] )  {
         return -1;
     }
 
+    //take out the last / if it exists because we add it in request filename.
+    if (root_address[strlen(root_address) - 1] == '/') {
+        root_address[strlen(root_address) - 1] = '\0';
+    }
+    printf("root_address: %s\n", root_address);
 
     int server, new_socket;
     struct sockaddr_in serverAddress;
-    struct Header header;
+
 
     header.http_version = 1; //TODO: fix, cant hardcode for Persistent server, need to parse header for version
     header.connectiontype = TYPE_KEEPALIVE; //REMOVE AFTER YOU POPULATE THIS VALUE IN ServerHelper.c
@@ -81,26 +124,35 @@ int main( int argc, char *argv[] )  {
     while(1) { //while loop so it can process more requests that come in
         printf("--------------REQUESTS--------------\n");
         //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
-
         if ((new_socket = accept(server, NULL, NULL)) <0)
         {
             perror("ACCEPT FAILED");
             exit(EXIT_FAILURE);
         }
-
+        //======================================================================================
+        //for each client request creates a thread and assign the client request to it to process
+        //so the main thread can entertain next request
+//        if( pthread_create(&tid[i++], NULL, socketThread, &newSocket) != 0 )
+//            printf("Failed to create thread\n");
+//
+//        if( i >= 50)
+//        {
+//            i = 0;
+//            while(i < 50)
+//            {
+//                pthread_join(tid[i++],NULL);
+//            }
+//            i = 0;
+//        }
+        //=============================================================
         char buffer[30000];
+
 
         while(1) {
             int n = read(new_socket, buffer, 30000);
             if (n <= 0) { printf("read() ends\n"); break; }
 
             get_header(&header, buffer);
-
-            //take out the last / if it exists because we add it in request filename.
-            if (root_address[strlen(root_address) - 1] == '/') {
-                root_address[strlen(root_address) - 1] = '\0';
-            }
-            printf("root_address: %s\n", root_address);
             handler(new_socket, &header, root_address);
 
             if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
@@ -110,11 +162,11 @@ int main( int argc, char *argv[] )  {
 
             free_memory(&header);
         }
-
         printf("CONNECTION CLOSED\n");
         close(new_socket);
 
     }
+    return 0;
 
 }
 
