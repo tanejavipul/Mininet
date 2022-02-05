@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-FLAGS = -Wall -Werror -std=c99
+FLAGS = -Wall -Werror -std=c99 -pthread
 .PHONY: all clean
 
 # https://stackoverflow.com/questions/653807/determining-c-executable-name
