@@ -25,17 +25,30 @@ void get_header(struct Header *header, char* input) {
     while(token != NULL) {
         strcpy(extract_token,token);
 
-        //PULL FILENAME + FILE TYPE
+        //PULL FILENAME + FILE TYPE +
         if(contains(extract_token, GET)==0)
         {
             //get filename
             header->filename = malloc(sizeof(char)*(strlen(extract_token)));
             header->filetype = malloc(sizeof(char)*(strlen(extract_token)));
 
+            char *http_version = (char *) malloc(sizeof(char) * strlen(extract_token));
             char *file_name = (char *) malloc(sizeof(char) * strlen(extract_token));
             char *file_type;
-            sscanf(extract_token,"%*s %s %*s",file_name);
+            sscanf(extract_token,"%*s %s %s",file_name, http_version);
             strcpy(header->filename, file_name);
+
+            //get http_version
+            if(contains(http_version, HTTP10) == 0) {
+                header->http_version = 0;
+            } else if(contains(http_version, HTTP11) == 0) {
+                header->http_version = 1;
+            } else {
+                // TODO FIX IN CASE NO OR IMPROPER HTTP VERSION
+                //edge case fail if wrong http version
+                return;
+            }
+
 
             // TODO FIX IN CASE NO FILETYPE DONT THINK WE CAN STRTOK IT
             // TODO strrchr return null if it cant find char
@@ -76,7 +89,6 @@ void get_header(struct Header *header, char* input) {
             printf("extract token if modified: %s\n", extract_token);
             char *output = malloc(sizeof(char)*(strlen(extract_token)));
             sscanf(extract_token, "If-Modified-Since: %[^\t\n]", output);
-            printf("hello\n");
 
             header->if_modified_since = malloc(sizeof(char)*(strlen(output)));
             printf("if_modified_since : %s\n", output);
@@ -88,7 +100,6 @@ void get_header(struct Header *header, char* input) {
             printf("extract token if unmodified: %s\n", extract_token);
             char *output = malloc(sizeof(char)*(strlen(extract_token)));
             sscanf(extract_token, "If-Unmodified-Since: %[^\t\n]", output);
-            printf("hello\n");
             printf("%s\n",output);
 
             header->if_unmodified_since = malloc(sizeof(char)*(strlen(output)));
@@ -97,22 +108,32 @@ void get_header(struct Header *header, char* input) {
             free(output);
         }
 
-        //TODO: PULL HTTP VERSION, copy into req->http_version
+        if(contains(extract_token, CONNECTION)==0)
+        {
+            printf("extract token CONNECTION: %s\n", extract_token);
+            char *output = malloc(sizeof(char)*(strlen(extract_token)));
+            sscanf(extract_token, "Connection: %[^\t\n]", output);
 
-        //TODO: PULL Connection: header, populate header->connectiontype
-        //SEMI PSEUDO CODE FOR POPULATING req->connectiontype
-//        if (Connection: header exists) {
-//            strcpy(req->connectiontype, header_value);
-//        } else { //no Connection: header specified, use default value based on HTTP version
-//            if (req->http_version == 0) {
-//                strcpy(req->connectiontype, TYPE_CLOSE);
-//            } else {
-//                strcpy(req->connectiontype, TYPE_KEEPALIVE)
-//            }
-//        }
+            header->connectiontype = malloc(sizeof(char)*(strlen(output)));
+            printf("Connection : %s\n", output);
+            strcpy(header->connectiontype, output);
+            free(output);
+        }
 
         printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
+    }
+    //if there was no connection type
+    if(header->connectiontype == NULL) {
+        header->connectiontype = malloc(sizeof(char)*(100));
+        if(header->http_version == 0) {
+            strcpy(header->connectiontype, TYPE_CLOSE);
+        } else if(header->http_version == 1) {
+            strcpy(header->connectiontype, TYPE_KEEPALIVE);
+        } else {
+            //TODO if there is no connectiontype header and no http_version but this should've failed already
+            return;
+        }
     }
     free(extract_token);
 }
@@ -205,11 +226,21 @@ void free_memory(struct Header *header) {
         free(header->if_modified_since);
     }
 
+    if (header->connectiontype != NULL) {
+        free(header->connectiontype);
+    }
+
+//    if (header->http_version != NULL) {
+//        free(header->http_version);
+//    }
+
     header->accept = NULL;
     header->filetype = NULL;
     header->filetype = NULL;
     header->type = NULL;
     header->if_modified_since = NULL;
+    header->connectiontype = NULL;
+//    header->http_version = NULL;
 }
 
 /*
