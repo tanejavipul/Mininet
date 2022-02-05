@@ -45,7 +45,7 @@ void get_header(struct Header *header, char* input) {
             printf("Filename: |%s| Filetype: |%s|\n",header->filename,header->filetype);
 
             // TODO need to add support for JPEG and JPG not just JPG
-            if(strcmp(file_type, JPG) == 0) {
+            if(contains(file_type, JPG) == 0) {
                 header->type = malloc(sizeof(char)*(strlen(IMAGE)));
                 strcpy(header->type, IMAGE);
             } else { // TODO filetype is html, css, txt or js, NOTE: might be an issue if we want to handle additional extensions, IDEA: send BAD REQUEST if not html css txt or js
