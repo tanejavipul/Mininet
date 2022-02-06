@@ -20,31 +20,42 @@ char* root_address;
 
 void * socketThread(void *arg)
 {
-    int new_socket = *((int *)arg);
+    int client_socket = *((int *)arg);
     char buffer[30000];
 
-    pthread_mutex_lock(&lock); //NOTE: not sure if this is the correct place to put it, i think we dont want 2 threads to run this block at the same time?
-    while(1) {
-        int n = read(new_socket, buffer, 30000);
-        if (n <= 0) { printf("read() ends\n"); pthread_exit(NULL); } //might exit with return value instead of null to indicate error
+    //struct for timeout
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+
+    //set the timeout on client socket
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+
+    //pthread_mutex_lock(&lock); //NOTE: not sure if this is the correct place to put it, i think we dont want 2 threads to run this block at the same time?
+
+    //handle requests
+    while(read(client_socket, buffer, 30000) > 0) { //need to break out of this loop if we get an error
+//        int n = read(client_socket, buffer, 30000);
+//        if (n <= 0) { printf("read() ends, pthread_exit\n"); pthread_exit(NULL); } //might exit with return value instead of null to indicate error
 
         get_header(&header, buffer);
 
         printf("root_address: %s\n", root_address);
-        handler(new_socket, &header, root_address);
+        handler(client_socket, &header, root_address);
 
-        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
+        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) {
             free_memory(&header);
             break;
         }
 
         free_memory(&header);
     }
-    pthread_mutex_unlock(&lock);
+    //pthread_mutex_unlock(&lock);
     sleep(1);
 
-    printf("CONNECTION CLOSED\n");
-    close(new_socket);
+    printf("CLIENT CONNECTION CLOSED\n");
+    close(client_socket);
+    printf("EXITING THREAD\n");
     pthread_exit(NULL);
 
 }
@@ -72,7 +83,7 @@ int main( int argc, char *argv[] )  {
     }
     printf("root_address: %s\n", root_address);
 
-    int server, new_socket;
+    int server, client_socket, opt;
     struct sockaddr_in serverAddress;
 
 
@@ -85,28 +96,13 @@ int main( int argc, char *argv[] )  {
         exit(-1);
     }
 
-//    // This is to lose the pesky "Address already in use" error message
-//    if (setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-//                   &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
-//    {
-//        perror("setsockopt");
-//        exit(EXIT_FAILURE);
-//    }
-
-    //Should be working, sets timeout on socket so the connection closes after a set time
-    //NOTE: unsure how this is working with threads
-//    struct timeval timeout;
-//    timeout.tv_sec = 10;
-//    timeout.tv_usec = 0;
-//
-//    if (setsockopt (server, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-//                    sizeof timeout) < 0)
-//        perror("setsockopt failed\n");
-//
-//    if (setsockopt (server, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-//                    sizeof timeout) < 0)
-//        perror("setsockopt failed\n");
-
+    // This is to lose the pesky "Address already in use" error message
+    if (setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+                   &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port_number); //port number provided
@@ -124,10 +120,10 @@ int main( int argc, char *argv[] )  {
 
     pthread_t tid[60];
     int i = 0;
-    while(1) { //while loop so it can process more requests that come in
+    while(1) { //while loop so it can process more connections that come in
         printf("--------------REQUESTS--------------\n");
         //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
-        if ((new_socket = accept(server, NULL, NULL)) <0)
+        if ((client_socket = accept(server, NULL, NULL)) <0)
         {
             perror("ACCEPT FAILED");
             exit(EXIT_FAILURE);
@@ -135,7 +131,7 @@ int main( int argc, char *argv[] )  {
         //=================https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading========================================
         //for each client request creates a thread and assign the client request to it to process
         //so the main thread can entertain next request
-        if( pthread_create(&tid[i++], NULL, socketThread, &new_socket) != 0 )
+        if( pthread_create(&tid[i++], NULL, socketThread, &client_socket) != 0 )
             printf("Failed to create thread\n");
 
         if( i >= 50)
@@ -148,26 +144,6 @@ int main( int argc, char *argv[] )  {
             i = 0;
         }
         //=============================================================
-//        char buffer[30000];
-//
-//
-//        while(1) {
-//            int n = read(new_socket, buffer, 30000);
-//            if (n <= 0) { printf("read() ends\n"); break; }
-//
-//            get_header(&header, buffer);
-//            handler(new_socket, &header, root_address);
-//
-//            if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
-//                free_memory(&header);
-//                break;
-//            }
-//
-//            free_memory(&header);
-//        }
-//        printf("CONNECTION CLOSED\n");
-//        close(new_socket);
-
     }
     return 0;
 
