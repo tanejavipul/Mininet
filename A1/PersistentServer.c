@@ -86,10 +86,6 @@ int main( int argc, char *argv[] )  {
     int server, client_socket, opt;
     struct sockaddr_in serverAddress;
 
-
-    header.http_version = 1; //TODO: fix, cant hardcode for Persistent server, need to parse header for version
-    header.connectiontype = TYPE_KEEPALIVE; //REMOVE AFTER YOU POPULATE THIS VALUE IN ServerHelper.c
-
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("socket failed");
