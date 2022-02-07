@@ -155,22 +155,30 @@ int get_header(struct Header *header, char *input) {
  *
  */
 void handler(int socket, struct Header *header, char *root_address) {
+    printf("inside handler\n");
+    printf("before handler%s\n",header->filename);
+
     char *file_name = header->filename;
     char *full_path = (char *) malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
 
     strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
     strcat(full_path, file_name);
+    printf("before handler%s\n",header->filename);
 
     int fp;
     if ((fp = open(full_path, O_RDONLY)) > 0) //FILE FOUND
     {
+        printf("if handler%s\n",header->filename);
+
         printf("%s Found\n", header->filetype);
         int bytes;
         char buffer[BUFFER_SIZE];
 
         //getting file size
+
         struct stat st;
         stat(full_path, &st);
+
         long file_size = st.st_size;
         printf("compiling done\n");
 
@@ -212,9 +220,11 @@ void handler(int socket, struct Header *header, char *root_address) {
                0) // Read the file to buffer. If not the end of the file, then continue reading the file
             write(socket, buffer, bytes); // Send the part of the jpeg to client.
         close(fp);
-    } else {
+    }
+    else {
+        printf("else handler%s\n",header->filename);
         write(socket,
-              "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
+              "HTTP/1.0 404 NOT FOUND\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
               strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
     }
     free(full_path);
