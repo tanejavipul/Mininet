@@ -15,6 +15,7 @@ int main( int argc, char *argv[] )  {
     //Get Arguments
     int port_number = atoi(argv[1]);
     char *root_address = argv[2];
+
     printf("Port Number:  %d\n", port_number);
     printf("Root Address: %s\n", root_address);
 
@@ -29,16 +30,23 @@ int main( int argc, char *argv[] )  {
     }
 
 
-    int server, new_socket;
+    int server, new_socket, header_output;
     struct sockaddr_in serverAddress;
     struct Header header;
+    header.accept = NULL;
+    header.filename = NULL;
+    header.filetype = NULL;
+    header.type = NULL;
+    header.if_modified_since = NULL;
+    header.if_unmodified_since = NULL;
+    header.connectiontype = NULL;
 
     header.http_version = 0;
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
-        perror("socket failed");
-        exit(-1);
+        fprintf(stderr, "socket failed");
+        return -1;
     }
 
     serverAddress.sin_family = AF_INET;
@@ -63,21 +71,32 @@ int main( int argc, char *argv[] )  {
             perror("accept");
             exit(EXIT_FAILURE);
         }
-        char buffer[30000];
-        read(new_socket, buffer, 30000);
+        char buffer[30000]; //JUST TO BE SAFE IN CASE
+        int input_val = read(new_socket, buffer, 30000);
+        printf("READ READ %d BYTES\n", input_val);
 
-        get_header(&header, buffer);
+        if (input_val != 0) {
 
-        //take out the last / if it exists because we add it in request filename.
-        if (root_address[strlen(root_address) - 1] == '/') {
-            root_address[strlen(root_address) - 1] = '\0';
+            buffer[input_val] = '\0';
+
+            header_output = get_header(&header, buffer);
+            //HANDLE FOR -1
+            if (header_output > 0) {
+                //take out the last / if it exists because we add it in request filename.
+                if (root_address[strlen(root_address) - 1] == '/') {
+                    root_address[strlen(root_address) - 1] = '\0';
+                }
+                printf("root_address: %s\n", root_address);
+                handler(new_socket, &header, root_address);
+            } else {
+                write(new_socket,
+                      "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>",
+                      strlen("HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>"));
+            }
         }
-        printf("root_address: %s\n", root_address);
-        handler(new_socket, &header, root_address);
-
         close(new_socket);
         free_memory(&header);
-        //free output from compiler response
+
     }
 
 }

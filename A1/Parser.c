@@ -50,7 +50,10 @@ char* TYPE_CLOSE = "close";
 
 //FileType
 char *JPG = "jpg";
+char *JPEG = "jpeg";
 char *HTML = "html";
+char *JS = "js";
+char *TXT = "txt";
 char *CSS = "css";
 char *PLAIN = "plain";
 char *TEXT = "text/";
