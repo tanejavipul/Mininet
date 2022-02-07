@@ -12,8 +12,6 @@ Content-Length: 2345
 <HTML> ...
  */
 
-char client_message[2000];
-char buffer[1024];
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 struct Header header;
 char* root_address;
@@ -21,7 +19,7 @@ char* root_address;
 void * socketThread(void *arg)
 {
     int client_socket = *((int *)arg);
-    char buffer[30000];
+    char buffer[BUFFER_SIZE];
 
     //struct for timeout
     struct timeval timeout;
@@ -31,12 +29,8 @@ void * socketThread(void *arg)
     //set the timeout on client socket
     setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
 
-    //pthread_mutex_lock(&lock); //NOTE: not sure if this is the correct place to put it, i think we dont want 2 threads to run this block at the same time?
-
     //handle requests
-    while(read(client_socket, buffer, 30000) > 0) { //need to break out of this loop if we get an error
-//        int n = read(client_socket, buffer, 30000);
-//        if (n <= 0) { printf("read() ends, pthread_exit\n"); pthread_exit(NULL); } //might exit with return value instead of null to indicate error
+    while(read(client_socket, buffer, BUFFER_SIZE) > 0) { //need to break out of this loop if we get an error
 
         get_header(&header, buffer);
 
@@ -50,9 +44,7 @@ void * socketThread(void *arg)
 
         free_memory(&header);
     }
-    //pthread_mutex_unlock(&lock);
     sleep(1);
-
     printf("CLIENT CONNECTION CLOSED\n");
     close(client_socket);
     printf("EXITING THREAD\n");
