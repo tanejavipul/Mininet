@@ -78,20 +78,30 @@ void *request_handler(void *socket_desc) {
     header.if_unmodified_since = NULL;
     header.connectiontype = NULL;
     header.http_version = 1;
-
+    int x = 1;
     char buffer[30000];
-    read(sock, buffer, 30000);
+    while(x != 0) {
+        x = read(sock, buffer, 30000);
+        if (x !=-1){
 
-    get_header(&header, buffer);
 
-    //take out the last / if it exists because we add it in request filename.
-    if (root_address[strlen(root_address) - 1] == '/') {
-        root_address[strlen(root_address) - 1] = '\0';
+            printf("return read |%d|\n",x);
+
+        int w = get_header(&header, buffer);
+
+        printf("return header: |%d|",w);
+        //take out the last / if it exists because we add it in request filename.
+        if (root_address[strlen(root_address) - 1] == '/') {
+            root_address[strlen(root_address) - 1] = '\0';
+        }
+
+        printf("root_address: |%s|\n", root_address);
+        printf("|%d| filename: |%s|", sock, header.filename);
+        handler(sock, &header, root_address);
+        free_memory(&header);
+        }
+//
     }
-
-    printf("root_address: |%s|\n", root_address);
-    handler(sock, &header, root_address);
-
 //    free_memory(&header);
     sleep(1);
     printf("CLIENT CONNECTION CLOSED\n");

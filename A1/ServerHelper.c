@@ -223,9 +223,14 @@ void handler(int socket, struct Header *header, char *root_address) {
     }
     else {
         printf("else handler%s\n",header->filename);
-        write(socket,
-              "HTTP/1.0 404 NOT FOUND\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
-              strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        int x = write(socket,
+              "HTTP/1.1 404 NOT FOUND\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
+              strlen("HTTP/1.1 404 Not Found\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        if(x==-1){
+            write(socket,
+                  "HTTP/1.1 404 NOT FOUND\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
+                  strlen("HTTP/1.1 404 Not Found\r\nConnection: keep-alive\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        }
     }
     free(full_path);
 }
