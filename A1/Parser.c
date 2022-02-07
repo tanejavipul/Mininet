@@ -206,7 +206,7 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     char *connection_t = connection_type(header);
     char *keepalive = keepalive_time();
 
-    int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len) + strlen(connection_t) + strlen(keepalive) + strlen(last_modify);
+    int total = strlen(status_r) + strlen(date) + strlen(MIME)  + strlen(content_t) + strlen(content_len) + strlen(connection_t) + strlen(keepalive) ;
     total += strlen(last_modify);
     char *output = malloc(sizeof(char)*total + 1000);
 
@@ -250,7 +250,7 @@ void update_tm_struct(char *extract_time, struct tm *timestamp){
     sscanf(extract_time, "%s %d %s %d %d:%d:%d %s", weekday_char, &day, month_char, &year, &hour, &min, &sec, timezone );
     //take out the , in the weekday
     weekday_char[strlen(weekday_char)-1] = '\0';
-//    printf("weekday_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", weekday_char, day, year, hour, min, sec);
+    printf("weekday_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", weekday_char, day, year, hour, min, sec);
 
     int month = 0;
     for ( int i = 0; MONTH[i] != NULL; i++) {

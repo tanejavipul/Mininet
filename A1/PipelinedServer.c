@@ -13,78 +13,96 @@ Content-Length: 2345
  */
 
 struct Header header;
-char* root_address;
+char *root_address;
 //might change it to remove global variables later
 
-int pipeline_handler(int client_socket, char* buffer){
+//int pipeline_handler(int client_socket, char *buffer) {
+//
+//    printf("inside PIPELIEN HaNDLE\n");
+//    char *header_copy = (char *)malloc(sizeof (char )*10000);
+//    printf(" header_cpy\n");
+////    header.accept = NULL;
+////    header.filename = NULL;
+////    header.filetype = NULL;
+////    header.type = NULL;
+////    header.if_modified_since = NULL;
+////    header.connectiontype = NULL;
+//
+//    int connection_check = 1;
+//    printf("inside PIPELIEN HaNDLE\n");
+//
+//    strcpy(header_copy, buffer);
+//    printf("inside PIPELIEN HaNDLE\n");
+//
+//    printf("PROCESS_PIPELINED_REQUEST: header_copy: %s\n", header_copy);
+//
+//    //====================more work needed if get_header and/or handler returns a value for connection_check===========================
+//    get_header(&header, header_copy);
+//
+//    printf("root_address: %s\n", root_address);
+//    printf("going inside handler\n");
+//
+//    handler(client_socket, &header, root_address);
+//    printf("outside handler\n");
+//
+//    if (strcmp(header.connectiontype, TYPE_CLOSE) == 0) {
+//        connection_check = -1; //will result in closing thread
+//    }
+//
+////       free_memory(&header); will cause double free error
+//    //======================================================================
+//    free(header_copy);
+//
+//    return connection_check;
+//}
 
-    char *header_start;
-    char *header_end;
-    char *header_copy;
+void *request_handler(void *socket_desc) {
+    printf("inside handler\n");
+//    char buffer[BUFFER_SIZE];
 
-    int header_size;
-    int connection_check = 1;
-    header_start = buffer; //set header_start to client message
-
-    //loop through each header in buffer and handle it accordingly
-    while((header_end = strstr(header_start, "\r\n\r\n")) != NULL) {
-        header_size = header_end - header_start + 1;
-        header_copy = (char *)malloc(header_size * sizeof(char));
-        memset(header_copy, '\0', header_size);
-
-        strncpy(header_copy, header_start, header_size);
-        printf("PROCESS_PIPELINED_REQUEST: header_copy: %s\n", header_copy);
-
-        //====================more work needed if get_header and/or handler returns a value for connection_check===========================
-        get_header(&header, header_copy);
-
-        printf("root_address: %s\n", root_address);
-        handler(client_socket, &header, root_address);
-
-        if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) {
-            connection_check = -1; //will result in closing thread
-        }
-
-//       free_memory(&header); will cause double free error
-        //======================================================================
-        free(header_copy);
-        header_start = header_end + 4; //move pointer to beginning of next request header
-    }
-    return connection_check;
-}
-
-void * request_handler(void *arg)
-{
-    int client_socket = *((int *)arg);
-    char buffer[BUFFER_SIZE];
-
+    int sock = *(int*)socket_desc;
     //struct for timeout
     struct timeval timeout;
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
 
     //set the timeout on client socket
-    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char *) &timeout, sizeof timeout);
 
-    //pthread_mutex_lock(&lock); //NOTE: not sure if this is the correct place to put it, i think we dont want 2 threads to run this block at the same time?
+    struct Header header;
+    header.accept = NULL;
+    header.filename = NULL;
+    header.filetype = NULL;
+    header.type = NULL;
+    header.if_modified_since = NULL;
+    header.if_unmodified_since = NULL;
+    header.connectiontype = NULL;
+    header.http_version = 1;
 
-    //handle requests
-    int connection_check = 1;
-    while( read(client_socket, buffer, BUFFER_SIZE) > 0 && connection_check > 0) {
-        connection_check = pipeline_handler(client_socket, buffer);
-        free_memory(&header);
+    char buffer[30000];
+    read(sock, buffer, 30000);
+
+    get_header(&header, buffer);
+
+    //take out the last / if it exists because we add it in request filename.
+    if (root_address[strlen(root_address) - 1] == '/') {
+        root_address[strlen(root_address) - 1] = '\0';
     }
+
+    printf("root_address: |%s|\n", root_address);
+    handler(sock, &header, root_address);
+
+//    free_memory(&header);
     sleep(1);
     printf("CLIENT CONNECTION CLOSED\n");
-    close(client_socket);
+   // close(sock); //TODO
     printf("EXITING THREAD\n");
     pthread_exit(NULL);
 
 }
 
 
-
-int main( int argc, char *argv[] )  {
+int main(int argc, char *argv[]) {
     //Get Arguments
     int port_number = atoi(argv[1]);
     root_address = argv[2];
@@ -96,7 +114,7 @@ int main( int argc, char *argv[] )  {
         return -1;
     }
 
-    if(access(root_address, F_OK) != 0) {
+    if (access(root_address, F_OK) != 0) {
         fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));
         return -1;
     }
@@ -110,14 +128,13 @@ int main( int argc, char *argv[] )  {
     int server, client_socket, opt;
     struct sockaddr_in serverAddress;
 
-    if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-    {
+    if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(-1);
     }
 
     // This is to lose the pesky "Address already in use" error message
-    if (setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+    if (setsockopt(server, SOL_SOCKET, SO_KEEPALIVE,
                    &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
     {
         perror("setsockopt");
@@ -131,39 +148,29 @@ int main( int argc, char *argv[] )  {
     bind(server, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
 
     int listening = listen(server, 10);
-    if (listening < 0)
-    {
+    if (listening < 0) {
         printf("Error: The server is not listening.\n");
         return 1;
     }
     printf("listening output: %d\n", listening);
 
-    pthread_t tid[60];
-    int i = 0;
-    while(1) { //while loop so it can process more connections that come in
+    pthread_t thread;
+    int *send_sock;
+    while (1) { //while loop so it can process more connections that come in
         printf("--------------REQUESTS--------------\n");
         //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
-        if ((client_socket = accept(server, NULL, NULL)) <0)
-        {
+        if ((client_socket = accept(server, NULL, NULL)) < 0) {
             perror("ACCEPT FAILED");
             exit(EXIT_FAILURE);
         }
-        //=================https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading========================================
-        //for each client request creates a thread and assign the client request to it to process
-        //so the main thread can entertain next request
-        if( pthread_create(&tid[i++], NULL, request_handler, &client_socket) != 0 )
-            printf("Failed to create thread\n");
+        send_sock = malloc(1);
+        *send_sock = client_socket;
 
-        if( i >= 50)
-        {
-            i = 0;
-            while(i < 50)
-            {
-                pthread_join(tid[i++],NULL);
-            }
-            i = 0;
+        printf("NEW THREAD\n");
+        if (pthread_create(&thread, NULL, request_handler, (void*)send_sock) != 0){
+            printf("Failed to create thread\n");
         }
-        //=============================================================
+
     }
     return 0;
 

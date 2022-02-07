@@ -172,6 +172,7 @@ void handler(int socket, struct Header *header, char *root_address) {
         struct stat st;
         stat(full_path, &st);
         long file_size = st.st_size;
+        printf("compiling done\n");
 
         if (header->if_modified_since != NULL) {
             int resp = if_modified_since_time_diff(header, full_path);
@@ -185,6 +186,8 @@ void handler(int socket, struct Header *header, char *root_address) {
                 return;
             }
         }
+        printf("compiling done\n");
+
         if (header->if_unmodified_since != NULL) {
             int resp = if_unmodified_since_time_diff(header, full_path);
             if (resp == -1) {
@@ -197,9 +200,13 @@ void handler(int socket, struct Header *header, char *root_address) {
                 return;
             }
         }
+        printf("compiling done\n");
+
 
         char *response = compile_response(header, OK, file_size, full_path); //generate response
+        printf("compiling done\n");
         send(socket, response, strlen(response), 0);
+        printf("sending done\n");
 
         while ((bytes = read(fp, buffer, BUFFER_SIZE)) >
                0) // Read the file to buffer. If not the end of the file, then continue reading the file
