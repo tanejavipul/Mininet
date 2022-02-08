@@ -20,7 +20,7 @@ PipelinedServer: PipelinedServer.c
 test: Test.o
 	gcc ${FLAGS} -o $@ $<
 
-all: clean SimpleServer PersistentServer PipelinedServer test
+all: clean SimpleServer PersistentServer PipelinedServer
 
 clean:
 	rm -f SimpleServer PersistentServer PipelinedServer *.o test

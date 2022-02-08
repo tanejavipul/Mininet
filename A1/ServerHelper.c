@@ -71,7 +71,6 @@ int get_header(struct Header *header, char *input) {
                 header->type = malloc(sizeof(char) * (strlen(TEXT)));
                 strcpy(header->type, TEXT);
             }
-
             free(file_name);
         }
 
@@ -134,8 +133,7 @@ int get_header(struct Header *header, char *input) {
     }
 //if there was no connection type
     if (header->connectiontype == NULL) {
-        header->
-                connectiontype = malloc(sizeof(char) * (100));
+        header->connectiontype = malloc(sizeof(char) * (100));
         if (header->http_version == 0) {
             strcpy(header
                            ->connectiontype, TYPE_CLOSE);
@@ -144,7 +142,8 @@ int get_header(struct Header *header, char *input) {
                            ->connectiontype, TYPE_KEEPALIVE);
         } else {
 //if there is no connectiontype header and no http_version but this should've failed already
-            return -1;
+            strcpy(header
+                           ->connectiontype, TYPE_CLOSE);
         }
     }
     free(extract_token);

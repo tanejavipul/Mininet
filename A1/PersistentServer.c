@@ -34,7 +34,13 @@ int main( int argc, char *argv[] )  {
     struct Header header;
 
     header.http_version = 1; //TODO: fix, cant hardcode for Persistent server, need to parse header for version
-    header.connectiontype = TYPE_KEEPALIVE; //REMOVE AFTER YOU POPULATE THIS VALUE IN ServerHelper.c
+    header.accept = NULL;
+    header.filename = NULL;
+    header.filetype = NULL;
+    header.type = NULL;
+    header.if_modified_since = NULL;
+    header.if_unmodified_since = NULL;
+    header.connectiontype = NULL;
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
@@ -55,13 +61,13 @@ int main( int argc, char *argv[] )  {
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
 
-    if (setsockopt (server, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-                    sizeof timeout) < 0)
-        perror("setsockopt failed\n");
+//    if (setsockopt (server, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+//                    sizeof timeout) < 0)
+//        perror("setsockopt failed\n");
 
-    if (setsockopt (server, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-                    sizeof timeout) < 0)
-        perror("setsockopt failed\n");
+//    if (setsockopt (server, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+//                    sizeof timeout) < 0)
+//        perror("setsockopt failed\n");
 
 
     serverAddress.sin_family = AF_INET;
@@ -103,18 +109,18 @@ int main( int argc, char *argv[] )  {
             printf("root_address: %s\n", root_address);
             handler(new_socket, &header, root_address);
 
+            printf("here \n");
             if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
                 free_memory(&header);
                 break;
             }
+            printf("here \n");
 
             free_memory(&header);
         }
 
         printf("CONNECTION CLOSED\n");
         close(new_socket);
-
     }
-
 }
 
