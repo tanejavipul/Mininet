@@ -62,15 +62,19 @@ int get_header(struct Header *header, char *input) {
 
             printf("Filename: |%s| Filetype: |%s|\n", header->filename, header->filetype);
 
+            printf("CONTAIN RETURN: |%d|\n",contains(file_type, HTML) );
+
             if (contains(file_type, JPG) == 0 || contains(file_type, JPEG) == 0) {
                 header->type = malloc(sizeof(char) * (strlen(IMAGE)));
                 strcpy(header->type, IMAGE);
-            } else if (contains(file_type, CSS) == 0 || contains(file_type, HTML) || contains(file_type, JS) == 0 ||
+            } else if (contains(file_type, CSS) == 0 || contains(file_type, HTML) == 0 || contains(file_type, JS) == 0 ||
                        contains(file_type, TXT) == 0) {
 
                 header->type = malloc(sizeof(char) * (strlen(TEXT)));
                 strcpy(header->type, TEXT);
             }
+            printf("CONTENT TYPE SAVE: |%s|\n", header->type);
+
             free(file_name);
         }
 
