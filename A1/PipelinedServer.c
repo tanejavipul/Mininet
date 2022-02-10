@@ -63,7 +63,7 @@ void *request_handler(void *socket_desc) {
     int sock = *(int*)socket_desc;
     //struct for timeout
     struct timeval timeout;
-    timeout.tv_sec = 10;
+    timeout.tv_sec = 3;
     timeout.tv_usec = 0;
 
     //set the timeout on client socket
@@ -80,12 +80,10 @@ void *request_handler(void *socket_desc) {
     header.http_version = 1;
     int x = 1;
     char buffer[30000];
-    while(x != 0) {
-        x = read(sock, buffer, 30000);
-        if (x !=-1){
+    while(read(sock, buffer, 30000) > 0) {
 
 
-            printf("return read |%d|\n",x);
+        printf("return read |%d|\n",x);
 
         int w = get_header(&header, buffer);
 
@@ -100,16 +98,23 @@ void *request_handler(void *socket_desc) {
         handler(sock, &header, root_address);
         free_memory(&header);
         }
+        sleep(1);
+        printf("CLIENT CONNECTION CLOSED\n");
+        close(sock); //TODO
+        free(socket_desc);
+        printf("EXITING THREAD\n");
+        pthread_exit(NULL);
+
 //
     }
 //    free_memory(&header);
-    sleep(1);
-    printf("CLIENT CONNECTION CLOSED\n");
-   // close(sock); //TODO
-    printf("EXITING THREAD\n");
-    pthread_exit(NULL);
+//    sleep(1);
+//    printf("CLIENT CONNECTION CLOSED\n");
+//   // close(sock); //TODO
+//    printf("EXITING THREAD\n");
+//    pthread_exit(NULL);
 
-}
+
 
 
 int main(int argc, char *argv[]) {
@@ -144,12 +149,12 @@ int main(int argc, char *argv[]) {
     }
 
     // This is to lose the pesky "Address already in use" error message
-    if (setsockopt(server, SOL_SOCKET, SO_KEEPALIVE,
-                   &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
-    {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }
+//    if (setsockopt(server, SOL_SOCKET, SO_KEEPALIVE,
+//                   &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
+//    {
+//        perror("setsockopt");
+//        exit(EXIT_FAILURE);
+//    }
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port_number); //port number provided

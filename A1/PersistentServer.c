@@ -96,9 +96,7 @@ int main( int argc, char *argv[] )  {
 
         char buffer[30000];
 
-        while(1) {
-            int n = read(new_socket, buffer, 30000);
-            if (n <= 0) { printf("read() ends\n"); break; }
+        while(read(new_socket, buffer, 30000) > 0) {
 
             get_header(&header, buffer);
 
