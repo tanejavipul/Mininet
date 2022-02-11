@@ -46,10 +46,10 @@ char *MIME = "MIME-version: 1.0\r\n";
 char *LAST_MODIFIED = "Last-Modified: ";
 
 //Error Response
-char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>404 Not Found</body></html>";
-char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>404 Not Found</body></html>";
+char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
+char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
+char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
+char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
 
 //Request and Response
 char* CONNECTION = "Connection:";
