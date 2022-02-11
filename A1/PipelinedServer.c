@@ -14,53 +14,12 @@ Content-Length: 2345
 
 struct Header header;
 char *root_address;
-//might change it to remove global variables later
 
-//int pipeline_handler(int client_socket, char *buffer) {
-//
-//    printf("inside PIPELIEN HaNDLE\n");
-//    char *header_copy = (char *)malloc(sizeof (char )*10000);
-//    printf(" header_cpy\n");
-////    header.accept = NULL;
-////    header.filename = NULL;
-////    header.filetype = NULL;
-////    header.type = NULL;
-////    header.if_modified_since = NULL;
-////    header.connectiontype = NULL;
-//
-//    int connection_check = 1;
-//    printf("inside PIPELIEN HaNDLE\n");
-//
-//    strcpy(header_copy, buffer);
-//    printf("inside PIPELIEN HaNDLE\n");
-//
-//    printf("PROCESS_PIPELINED_REQUEST: header_copy: %s\n", header_copy);
-//
-//    //====================more work needed if get_header and/or handler returns a value for connection_check===========================
-//    get_header(&header, header_copy);
-//
-//    printf("root_address: %s\n", root_address);
-//    printf("going inside handler\n");
-//
-//    handler(client_socket, &header, root_address);
-//    printf("outside handler\n");
-//
-//    if (strcmp(header.connectiontype, TYPE_CLOSE) == 0) {
-//        connection_check = -1; //will result in closing thread
-//    }
-//
-////       free_memory(&header); will cause double free error
-//    //======================================================================
-//    free(header_copy);
-//
-//    return connection_check;
-//}
-
-void *request_handler(void *socket_desc) {
+void *thread_handler(void *socket_desc) {
     printf("inside handler\n");
 //    char buffer[BUFFER_SIZE];
 
-    int sock = *(int*)socket_desc;
+    int sock = *(int *) socket_desc;
     //struct for timeout
     struct timeval timeout;
     timeout.tv_sec = 3;
@@ -78,32 +37,39 @@ void *request_handler(void *socket_desc) {
     header.if_unmodified_since = NULL;
     header.connectiontype = NULL;
     header.http_version = 1;
-    int x = 1;
+    int x = 1, get_header_output;
     char buffer[30000];
-    while(read(sock, buffer, 30000) > 0) {
+    while (read(sock, buffer, 30000) > 0) {
 
 
-        printf("return read |%d|\n",x);
+        printf("return read |%d|\n", x);
 
-        int w = get_header(&header, buffer);
+        get_header_output = get_header(&header, buffer);
 
-        printf("return header: |%d|",w);
-        //take out the last / if it exists because we add it in request filename.
-        if (root_address[strlen(root_address) - 1] == '/') {
-            root_address[strlen(root_address) - 1] = '\0';
+        if (get_header_output > 0) {
+
+
+            printf("return header: |%d|", get_header_output);
+            //take out the last / if it exists because we add it in request filename.
+            if (root_address[strlen(root_address) - 1] == '/') {
+                root_address[strlen(root_address) - 1] = '\0';
+            }
+
+            printf("root_address: |%s|\n", root_address);
+            printf("|%d| filename: |%s|", sock, header.filename);
+            handler(sock, &header, root_address);
+
         }
-
-        printf("root_address: |%s|\n", root_address);
-        printf("|%d| filename: |%s|", sock, header.filename);
-        handler(sock, &header, root_address);
         free_memory(&header);
-        }
-        sleep(1);
-        printf("CLIENT CONNECTION CLOSED\n");
-        close(sock); //TODO
-        free(socket_desc);
-        printf("EXITING THREAD\n");
-        pthread_exit(NULL);
+
+    }
+    free_memory(&header);
+    sleep(1);
+    printf("CLIENT CONNECTION CLOSED\n");
+    close(sock); //TODO
+    free(socket_desc);
+    printf("EXITING THREAD\n");
+    pthread_exit(NULL);
 
 //
     }
@@ -182,7 +148,7 @@ int main(int argc, char *argv[]) {
         *send_sock = client_socket;
 
         printf("NEW THREAD\n");
-        if (pthread_create(&thread, NULL, request_handler, (void*)send_sock) != 0){
+        if (pthread_create(&thread, NULL, thread_handler, (void *) send_sock) != 0) {
             printf("Failed to create thread\n");
         }
 

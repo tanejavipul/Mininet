@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <sys/time.h>
+
 
 #define BUFFER_SIZE 1024
 
@@ -43,6 +45,12 @@ char *DATE = "Date:";
 char *MIME = "MIME-version: 1.0\r\n";
 char *LAST_MODIFIED = "Last-Modified: ";
 
+//Error Response
+char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>304 Not Modified</body></html>";
+char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>404 Not Found</body></html>";
+char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>304 Not Modified</body></html>";
+char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n<!doctype html><html><body>404 Not Found</body></html>";
+
 //Request and Response
 char* CONNECTION = "Connection:";
 char* KEEP_ALIVE = "Keep-Alive: timeout="; //header to specify timeout time
@@ -54,6 +62,7 @@ char *JPG = "jpg";
 char *JPEG = "jpeg";
 char *HTML = "html";
 char *JS = "js";
+char *PNG = "png";
 char *TXT = "txt";
 char *CSS = "css";
 char *PLAIN = "plain";
@@ -66,9 +75,7 @@ char *TEXT_ANY = "text/*";
 char *DAYS_OF_WEEK[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 char *MONTH[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul","Aug", "Sep", "Oct", "Nov", "Dec" };
 
-
-
-
+//Request headers
 struct Header {
     char* filename;
     char* accept;
@@ -107,10 +114,7 @@ int contains(char* string, char* word) {
     return -1;
 }
 
-
-
-
-
+//HTTP VERSION response
 char *status_response( struct Header *header, char *status){
     // HTTP/1.0 200 OK
     int x = strlen(HTTP10) + strlen(header->filetype) + strlen(TEXT);
@@ -128,20 +132,22 @@ char *status_response( struct Header *header, char *status){
     return output;
 }
 
+//DATE response
 char *date_response() {
     //Date: Fri, 08 Aug 2003 08:12:31 GMT
     char *output = (char *)malloc(100 * sizeof(char));
     time_t now = time(NULL);
-    struct tm *tm = localtime(&now);
+    struct tm *tm = gmtime(&now);
 
     //returns a int for response code
-    snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,tm->tm_zone);
+    snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,"GMT");
+
 
     printf("DATE_RESPONSE: %s",output);
     return output;
 }
 
-// TODO need to fix
+//CONTENT TYPE response
 char *content_type(struct Header *header) {
     char *output = (char *)malloc(100 * sizeof(char));
 
@@ -151,6 +157,7 @@ char *content_type(struct Header *header) {
     return output;
 }
 
+//CONTENT LENGTH response
 char *content_length(int length) {
     char *output = (char *)malloc(100 * sizeof(char));
 
@@ -160,6 +167,7 @@ char *content_length(int length) {
     return output;
 }
 
+//CONNECTION TYPE response
 char *connection_type(struct Header *header) {
     char *output = (char *)malloc(100 * sizeof(char));
 
@@ -170,17 +178,18 @@ char *connection_type(struct Header *header) {
 
 }
 
+//KEEPALIVE TIME response
 char *keepalive_time() {
     char *output = (char *)malloc(100 * sizeof(char));
 
-    snprintf(output, 100, "%s%d%s", KEEP_ALIVE,300,END_OF_LINE);
+    snprintf(output, 100, "%s%d%s", KEEP_ALIVE,2,END_OF_LINE);
 
     printf("KEEPALIVE_RESPONSE: %s",output);
     return output;
 
 }
 
-// returns last modified of file
+//LAST MODIFIED response
 char *last_modified_response(char *full_path) {
     //Fri, 08 Aug 2003 08:12:31 GMT
     char *output = (char *) malloc(100 * sizeof(char));
@@ -196,7 +205,7 @@ char *last_modified_response(char *full_path) {
     return output;
 }
 
-
+//generate final response to send to client
 char *compile_response(struct Header *header, char *status, int length, char *full_path) {
     char *status_r = status_response(header, status);
     char *date = date_response();
@@ -210,19 +219,17 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     total += strlen(last_modify);
     char *output = malloc(sizeof(char)*total + 1000);
 
-    // do the copy and concat
     strcpy(output, status_r);
-    strcat(output,date); // or strncat
-    //do we need server?
+    strcat(output,date);
     strcat(output,MIME);
     strcat(output,last_modify);
     strcat(output,content_t);
     strcat(output,content_len);
     strcat(output, connection_t);
-    //Leaving this out for now
-//    if (strcmp(header->connectiontype, TYPE_KEEPALIVE) == 0) {
-//        strcat(output, keepalive); //only add this header if connection type is keep-alive, it is possible for 1.1 header to pass connection: close
-//    }
+    //add keepalive if http version 1.1
+    if (header->http_version == 1) {
+        strcat(output, keepalive);
+    }
     strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
 
 
