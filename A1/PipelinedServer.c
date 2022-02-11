@@ -161,6 +161,7 @@ int main(int argc, char *argv[]) {
             sleep(3);
             printf("Failed to create thread\n");
         }
+        pthread_detach(thread);
 
     }
 }
