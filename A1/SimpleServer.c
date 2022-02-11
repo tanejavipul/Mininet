@@ -89,9 +89,12 @@ int main( int argc, char *argv[] )  {
             //    printf("root_address: %s\n", root_address);
                 handler(new_socket, &header, root_address);
             } else {
-                write(new_socket,
-                      "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>",
-                      strlen("HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>"));
+                if (header.http_version == 0) {
+                    write(new_socket, RESPONSE_404_0,strlen(RESPONSE_404_0));
+                } else {
+                    write(new_socket, RESPONSE_404_1,strlen(RESPONSE_404_1));
+                }
+//                write(new_socket, error_response,strlen(RESPONSE_404_0));
             }
         }
         close(new_socket);

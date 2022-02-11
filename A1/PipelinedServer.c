@@ -20,6 +20,7 @@ void *thread_handler(void *socket_desc) {
 //    char buffer[BUFFER_SIZE];
 
     int sock = *(int *) socket_desc;
+    free(socket_desc);
     //struct for timeout
     struct timeval timeout;
     timeout.tv_sec = 3;
@@ -61,19 +62,22 @@ void *thread_handler(void *socket_desc) {
 
         }
         else {
-            write(sock,
-                  "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>",
-                  strlen("HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>"));
+            char *error_response = (char *) malloc((strlen(RESPONSE_404_0)) * sizeof(char));
+            if (header.http_version == 0) {
+                strcpy(error_response, RESPONSE_404_0);
+            } else {
+                strcpy(error_response, RESPONSE_404_1);
+            }
+            write(sock, error_response,strlen(RESPONSE_404_0));
+            free(error_response);
         }
         free_memory(&header);
 
     }
     free_memory(&header);
     sleep(1);
-    //printf("CLIENT CONNECTION CLOSED\n");
     close(sock); //TODO
-    free(socket_desc);
-    //printf("EXITING THREAD\n");
+//    free(socket_desc);
     pthread_exit(NULL);
 
 //

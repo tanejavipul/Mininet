@@ -77,9 +77,14 @@ int main( int argc, char *argv[] )  {
                 handler(new_socket, &header, root_address);
             }
             else {
-                write(new_socket,
-                      "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>",
-                      strlen("HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>"));
+                char *error_response = (char *) malloc((strlen(RESPONSE_404_0)) * sizeof(char));
+                if (header.http_version == 0) {
+                    strcpy(error_response, RESPONSE_404_0);
+                } else {
+                    strcpy(error_response, RESPONSE_404_1);
+                }
+                write(new_socket, error_response,strlen(RESPONSE_404_0));
+                free(error_response);
             }
 
             if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
