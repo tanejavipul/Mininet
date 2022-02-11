@@ -128,7 +128,7 @@ char *status_response( struct Header *header, char *status){
         snprintf(output, x, "%s %s %s", HTTP11,status,END_OF_LINE); //HTTP 1.1
     }
 
-    printf("STATUS_RESPONSE: %s",output);
+    //printf("STATUS_RESPONSE: %s",output);
     return output;
 }
 
@@ -143,7 +143,7 @@ char *date_response() {
     snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,"GMT");
 
 
-    printf("DATE_RESPONSE: %s",output);
+    //printf("DATE_RESPONSE: %s",output);
     return output;
 }
 
@@ -153,7 +153,7 @@ char *content_type(struct Header *header) {
 
     snprintf(output, 100, "%s %s%s%s", CONTENT_TYPE,header->type,header->filetype,END_OF_LINE);
 
-    printf("CONTENT_TYPE_RESPONSE: %s",output);
+    //printf("CONTENT_TYPE_RESPONSE: %s",output);
     return output;
 }
 
@@ -163,7 +163,7 @@ char *content_length(int length) {
 
     snprintf(output, 100, "%s %d\r\n", CONTENT_LENGTH,length);
 
-    printf("CONTENT_LENGTH_RESPONSE: %s",output);
+    //printf("CONTENT_LENGTH_RESPONSE: %s",output);
     return output;
 }
 
@@ -173,7 +173,7 @@ char *connection_type(struct Header *header) {
 
     snprintf(output, 100, "%s %s%s", CONNECTION,header->connectiontype,END_OF_LINE);
 
-    printf("CONNECTION_RESPONSE: %s",output);
+    //printf("CONNECTION_RESPONSE: %s",output);
     return output;
 
 }
@@ -184,7 +184,7 @@ char *keepalive_time() {
 
     snprintf(output, 100, "%s%d%s", KEEP_ALIVE,2,END_OF_LINE);
 
-    printf("KEEPALIVE_RESPONSE: %s",output);
+    //printf("KEEPALIVE_RESPONSE: %s",output);
     return output;
 
 }
@@ -201,7 +201,9 @@ char *last_modified_response(char *full_path) {
 
     strcpy(output, LAST_MODIFIED);
     strcat(output, last_modified_time);
-    printf("completed last modified\n");
+    //printf("completed last modified\n");
+    //ADDED
+    free(last_modified_time);
     return output;
 }
 
@@ -240,7 +242,7 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     free(last_modify);
     free(connection_t);
     free(keepalive);
-    printf("COMPILED RESPONSE:\n%s", output);
+    //printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }
 
@@ -282,14 +284,14 @@ void update_tm_struct(char *extract_time, struct tm *timestamp){
     timestamp->tm_hour = hour;
     timestamp->tm_min = min;
     timestamp->tm_sec = sec;
-    printf("completed update\n");
+    //printf("completed update\n");
 }
 
 
 int if_modified_since_time_diff (struct Header *header, char *full_path) {
     //    printf("timestamp: %s\n", asctime (&timestamp));
     //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
-    printf("starting time diff last modified\n");
+    //printf("starting time diff last modified\n");
 
 
     // file modified time
@@ -303,11 +305,11 @@ int if_modified_since_time_diff (struct Header *header, char *full_path) {
     double diff = difftime(mktime(&header_modified_time), mktime(gmtime(&file_modified_time.st_mtime)));
 
     if ( diff > 0 ) {
-        printf("%s is newer than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
+        //printf("%s is newer than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
         //failed
         return -1;
     } else {
-        printf("%s is older than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
+        //printf("%s is older than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
         return 0;
     }
 }
@@ -315,7 +317,7 @@ int if_modified_since_time_diff (struct Header *header, char *full_path) {
 int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
     //    printf("timestamp: %s\n", asctime (&timestamp));
     //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
-    printf("starting time diff last modified\n");
+    //printf("starting time diff last modified\n");
 
 
     // file modified time
@@ -329,11 +331,11 @@ int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
     double diff = difftime(mktime(&header_unmodified_time), mktime(gmtime(&file_unmodified_time.st_mtime)));
 
     if ( diff < 0 ) {
-        printf("%s is newer than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        //printf("%s is newer than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
         //failed
         return -1;
     } else {
-        printf("%s is older than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        //printf("%s is older than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
         return 0;
     }
 }

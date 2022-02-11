@@ -4,8 +4,8 @@ int main( int argc, char *argv[] )  {
     //Get Arguments
     int port_number = atoi(argv[1]);
     char *root_address = argv[2];
-    printf("Port Number:  %d\n", port_number);
-    printf("Root Address: %s\n", root_address);
+    //printf("Port Number:  %d\n", port_number);
+    //printf("Root Address: %s\n", root_address);
 
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
@@ -50,7 +50,7 @@ int main( int argc, char *argv[] )  {
         printf("Error: The server is not listening.\n");
         return 1;
     }
-    printf("listening output: %d\n", listening);
+    //printf("listening output: %d\n", listening);
 
     while(1) { //while loop so it can listen to more connections
         printf("--------------REQUESTS--------------\n");
@@ -73,7 +73,7 @@ int main( int argc, char *argv[] )  {
                 if (root_address[strlen(root_address) - 1] == '/') {
                     root_address[strlen(root_address) - 1] = '\0';
                 }
-                printf("root_address: %s\n", root_address);
+                //printf("root_address: %s\n", root_address);
                 handler(new_socket, &header, root_address);
             }
             else {
@@ -90,7 +90,7 @@ int main( int argc, char *argv[] )  {
             free_memory(&header);
         }
 
-        printf("CONNECTION CLOSED\n");
+        //printf("CONNECTION CLOSED\n");
         close(new_socket);
     }
 }
