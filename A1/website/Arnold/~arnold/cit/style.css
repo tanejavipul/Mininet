@@ -1,0 +1,196 @@
+A.blueLink:link { font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		  font-size: 12px;
+		  line-height: 16px;
+          color: #000033;
+          text-decoration: none;
+          background: transparent;
+          
+ }
+A.blueLink:visited {font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		    font-size: 12px;
+			line-height: 16px;
+            color: #000033;
+            text-decoration: none;
+            background: transparent;
+ }
+A.blueLink:hover {font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		  font-size: 12px;
+		  line-height: 16px;
+          color: #000000;
+          text-decoration: underline;
+          background: transparent;
+ }
+
+A.blueLink:active {font-family: Verdana, Arial, Helvetica, sans-serif;
+  		    font-size: 12px;
+			line-height: 16px;
+            color: #4AE7FF;
+            text-decoration: none;
+            background: transparent;
+ }
+ 
+ 
+ A:link { font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		  font-size: 12px;
+		  line-height: 16px;
+          color: #4AE7FF;
+          text-decoration: none;
+          background: transparent;
+          
+ }
+A:visited {font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		    font-size: 12px;
+			line-height: 16px;
+            color: #4AE7FF;
+            text-decoration: none;
+            background: transparent;
+ }
+ A:hover {font-family: Verdana, Arial, Helvetica, sans-serif;
+ 		  font-size: 12px;
+		  line-height: 16px;
+          color: #ffffff;
+          text-decoration: underline;
+          background: transparent;
+ }
+
+ A:active {font-family: Verdana, Arial, Helvetica, sans-serif;
+  		    font-size: 12px;
+			line-height: 16px;
+            color: #4AE7FF;
+            text-decoration: none;
+            background: transparent;
+ }
+
+div.topBanner {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;	
+	text-align: left;
+	position:relative;	
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 5px;
+	margin-top: 5px;
+	width: 780px;
+}
+div.container {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	background-color: #003366;
+	color:  #ffffff;	
+	text-align: center;
+	position:relative;	
+	margin-left: auto;
+	margin-right: auto;
+	width: 780px;
+	height: 100%;
+	
+}
+td.footer {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;	
+	text-align: center;
+	position: relative;
+	margin-top: 5px;
+	margin-left: auto;
+	color: #003366;
+	margin-right: auto;
+	width: 780px;
+}
+html, body { 	
+	margin: 0;
+	padding: 0;
+	   font-family: Verdana, Arial, Helvetica, sans-serif;
+	   font-size: 12px;
+	   line-height: 17px;
+	   color: #999999;
+
+	   vertical-align:middle;   
+	   
+}		
+
+td {
+	vertical-align: top;
+	text-align: left;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;;
+	color:  #ffffff;	
+}
+
+td.left {
+	background-color: #003366;
+	width: 200px;
+	vertical-align:top;
+}
+
+
+
+
+td.main {
+	width: 580px;
+	background-color: #003366;
+	vertical-align:top;
+	
+}
+div.header {
+	padding-bottom: 20px;
+	font-size: 27px;	
+    color: #ffffff;
+	background-color: #003366;
+	font-weight:bold;
+
+}
+div.pageHeading {
+	filter:alpha(opacity=100);-moz-opacity:1;opacity:1;
+	background-color: #003366;
+	border-bottom: 2px solid #c0c0c0;
+	padding-top: 20px;
+	padding-bottom:5px;
+	font-size:15px;
+	font-weight:600;
+}
+#nav-menu ul
+{
+list-style: none;
+padding: 0;
+margin: 20px;
+text-align:left;
+width: 150px;
+} 
+#nav-menu li a
+{
+	filter:alpha(opacity=75%);-moz-opacity:.73;opacity:.63;
+	font-variant:small-caps;
+	font-weight:bold;
+	line-height:30px;
+	height: 30px;
+	width: 20em;	
+	padding:5px;
+	border: 1px solid #003366;
+	text-decoration: none;
+	text-align:left;
+	font-weight:200;
+}
+#nav-menu li a:hover
+{
+
+	height: 30px;
+	line-height:30px;
+	width: 20em;	
+	border: 1px solid #dcdce9;
+	padding:5px;
+	text-decoration: none;
+	text-align:left;
+	font-weight:200;
+}
+#nav-menu li a:active
+{
+
+	height: 30px;
+	line-height:30px;
+	width: 20em;	
+	border: 1px solid #dcdce9;
+	padding:5px;
+	text-decoration: none;
+	text-align:left;
+	font-weight:200;
+}
