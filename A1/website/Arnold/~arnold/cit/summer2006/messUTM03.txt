@@ -1,0 +1,46 @@
+Welcome to the Summer 2006 UTM session of Computing Insights for Teachers.
+
+You are receiving this email because you registered for the ADVANCED session of CIT 2006.
+
+1) Parking
+2) Food
+3) Location
+4) Times
+5) Contacting me
+
+1) PARKING IS FREE AT UTM!! Your parking pass can be picked up
+   in the lot 4 booth, after that, you can use your passes to 
+   park in lots 2,4,8 and 9 (see the map below).
+
+2) This year, your money paid for ...
+   Breakfasts (muffins, coffee etc.) outside CCIT2140 at 9:45 M-F 
+   Lunch (sandwhiches and wraps) outside CCIT2140 at 1 M-F
+
+   There is a Tim Hortons, MrSub and Pizza Pizza on campus as well.
+   Please let me know if you have any special dietary requirements!
+
+3) The sessions will take place in the CCIT building of the 
+   University of Toronto Mississauga. You can find maps at 
+
+       http://www.utm.utoronto.ca/108.0.html
+
+   and
+
+       http://www.cs.toronto.edu/~arnold/cit/campusmap.gif
+
+   the second link has LOT 4 and the CCIT building highlighted
+   but is an older map. You will probably park in LOT 4 and then
+   make your way through the South Building to the CCIT
+   building. People do get lost inside the South Building though.
+
+4) Sessions will be held from 10-4 (with breakfast at 9:45 and lunch
+   at 1 outside CCIT2140). 
+
+5) How to contact me...
+   arnold@cs.toronto.edu
+   905-828-3830
+
+Looking forward to seeing you next week!!
+
+Arnold Rosenbloom
+arnold@cs.toronto.edu

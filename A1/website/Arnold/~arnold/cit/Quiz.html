@@ -1,0 +1,137 @@
+<html>
+<head>
+<title>Computing Insights for Teachers at UTM</title>
+</head>
+<body bgcolor=ffffff>
+<table>
+<tr><td><img width=200 height=76 src=../pics/UofTMLogoCol.jpg></td>
+<td><h2>Computing Insights for Teachers</h2></td></tr>
+</table>
+<body bgcolor="#ffffff">
+<IMG align=top src="../pics/gradr.line.gif" alt=""> 
+<h3>Some Practice Problems</h3>
+<p>Please consider the following problems. They are meant to test
+familiarity with some language features. 
+<!-- We also may discuss
+some of these problems when discussing some of the non-Object Oriented features
+of Java. -->
+<p>
+<!-- 
+I would like you to submit the quiz (email your answers to
+arnold@cs.toronto.edu Subject: quiz) so I can
+take results and use them for planning the structure of the course. 
+This diagnostic type of quiz is for my purposes.  I would like to
+maximize the learning time by creating heterogeneous groupings so
+that you can learn and assist one another throughout the week.  It
+also gives you an opportunity to share ideas and teaching strategies
+with other teachers from different areas.
+-->
+
+<p>If you have any questions about the quiz, primes or any 
+programming language features (ie if statements,
+loops, procedures/functions, recursion etc.) please let me know and
+we can point you to some background material to get you warmed up.
+<p>
+<!--
+Implement the following functions/procedures/methods using <b>Java</b>
+You must use the suggested algorithm/approach.
+-->
+Implement the following functions/procedures/methods using the programming language of your choice
+You must use the suggested algorithm/approach.
+<ol>
+<li> <b>IsPrime(integer n)</b>
+	<p><b>Background:</b> An number n &gt; 1 is prime if and only if
+		its only divisors are 1 and itself.
+	<br><b>Input:</b> n an integer which is greater than 1
+	<br><b>Output:</b> returns true if n is a prime number and false
+			otherwise
+	<br><b>Example:</b> 
+		<ul>
+		<li>IsPrime(3) returns true
+		<li>IsPrime(4) returns false
+		<li>IsPrime(5) returns true
+		<li>IsPrime(6) returns false
+		<li>IsPrime(7) returns true
+		<li>IsPrime(8) returns false
+		</ul>
+	<br><br>
+<li> <b>AllPairs(integer n)</b>
+	<br><b>Input:</b> n an integer, n &gt;= 0
+	<br><b>Output:</b> prints out 
+	<pre>
+	(0,0)
+	(1,0)(1,1)
+	(2,0)(2,1)(2,2)
+	(3,0)(3,1)(3,2)(3,3)
+	...
+	(n,0)(n,1)...(n,n-1)(n,n)
+	</pre>
+<!--
+<li> <b>Balloon</b> (<i>Note:</i> We will be reviewing the ideas here in depth
+in the Advanced course, but let me know if you have difficulty with this).
+
+<p>A Balloon has a volume, capacity and knows whether it has been popped. 
+You can inflate the balloon (by a specified amount) and deflate the 
+balloon (also by a specified amount). A Balloon can not be inflated 
+once it has popped. Once popped, its capacity and volume should be 0. 
+A balloon pops because of over inflation. By default, 
+Balloons come from the factory in the following state: Not popped, capacity=20, volume=0.
+<p>
+Write class Balloon. Each instance of Balloon should behave as described above. 
+Write class UseBalloon (which has a main method). 
+UseBalloon.main() should create a few balloons, pop some of them and 
+try to blow them up again.
+-->
+<li> <b>Buyable(integer n)</b>
+	<p><b>Background:</b> At McDonalds, you can only purchase 6,9 and 20 packs
+		of McNuggets. Call an amount of McNuggets <i>buyable</i> if it is
+		possible to purchase some number of 6,9 and 20 packs and total the 
+		target amount.
+	<p> For example 0, 6, 15, 18 are all buyable. 10 and 11 are not buyable.
+	<br><b>Input:</b> n an integer
+	<br><b>Output:</b> returns true if n is a buyable amount, false otherwise
+	<br><b>Example:</b> 
+		<ul>
+		<li>Buyable(0) returns true
+		<li>Buyable(6) returns true
+		<li>Buyable(15) returns true
+		<li>Buyable(18) returns true
+		<li>Buyable(10) returns false
+		<li>Buyable(11) returns false
+		</ul>
+	<br><b>Algorithm:</b> Implement the following recursive algorithm
+	<pre>
+	if n &lt; 0 then n is not buyable
+	if n=0 then n is buyable
+	if one of n-6, n-9 or n-20 is buyable then so is n
+	</pre>
+	<br>
+	<br>
+<!--
+<li> <b>NPrimes(integer n)</b>
+	<br><b>Input:</b> n is an integer bigger than 0
+	<br><b>Output:</b> The first n primes are printed out
+	<br><b>Example:</b> 
+		<ul>
+		<li>NPrimes(1) prints out 2
+		<li>NPrimes(2) prints out 2,3
+		<li>NPrimes(3) prints out 2,3,5
+		<li>NPrimes(4) prints out 2,3,5,7
+		</ul>
+	<br><b>Algorithm:</b> 
+	<pre>
+	Maintain an array P of size n
+	P will contain the first n Primes
+	nextInt=2
+	while(P is not full){
+		if(nextInt is not divisible by any of the primes in P)then
+			add nextInt to P
+		end if
+		nextInt=nextInt+1
+	}
+	Print array P
+	</pre>
+-->
+</ol>
+</body>
+</html>
