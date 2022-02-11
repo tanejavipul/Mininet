@@ -15,7 +15,7 @@ Content-Length: 2345
 
 //    get_header(&request, buffer);
 int get_header(struct Header *header, char *input) {
-    printf("INSIDE GET_HEADER: %s\n", input);
+//    printf("INSIDE GET_HEADER: %s\n", input);
 
     char *main_strtok_pointer = NULL;
     char *extract_token = malloc(sizeof(char) * 10000);
@@ -37,6 +37,9 @@ int get_header(struct Header *header, char *input) {
             //EXTRACT FILENAME AND HTTP VERSION
             int x = sscanf(extract_token, "%*s %s %s", file_name, http_version); //two variables should be printed
             if (x != 2) {
+                free(http_version);
+                free(file_name);
+                free(extract_token);
                 return -1;
             }
             strcpy(header->filename, file_name);
@@ -48,6 +51,10 @@ int get_header(struct Header *header, char *input) {
                 header->http_version = 1;
             } else {
                 // IN CASE NO OR IMPROPER HTTP VERSION
+                free(http_version);
+                free(file_name);
+                free(extract_token);
+
                 return -1;
             }
 
@@ -56,13 +63,17 @@ int get_header(struct Header *header, char *input) {
 
             // IN CASE NO FILETYPE (strrchr return null if it cant find char)
             if (file_type == NULL) {
+                free(http_version);
+                free(file_name);
+                free(extract_token);
+
                 return -1;
             }
             strcpy(header->filetype, &file_type[1]); //to get rid of '.' char
 
-            printf("Filename: |%s| Filetype: |%s|\n", header->filename, header->filetype);
+            //printf("Filename: |%s| Filetype: |%s|\n", header->filename, header->filetype);
 
-            printf("CONTAIN RETURN: |%d|\n",contains(file_type, HTML) );
+            //printf("CONTAIN RETURN: |%d|\n",contains(file_type, HTML) );
 
             if (contains(file_type, JPG) == 0 || contains(file_type, JPEG) == 0 || contains(file_type, PNG) == 0) {
                 header->type = malloc(sizeof(char) * (strlen(IMAGE)));
@@ -75,12 +86,16 @@ int get_header(struct Header *header, char *input) {
                 strcpy(header->type, TEXT);
             }
             else {
+                free(http_version);
+                free(file_name);
+                free(extract_token);
                 return -1;
             }
 
-            printf("CONTENT TYPE SAVE: |%s|\n", header->type);
+            //printf("CONTENT TYPE SAVE: |%s|\n", header->type);
 
             free(file_name);
+            free(http_version);
         }
 
         //PULL ACCEPT
@@ -91,36 +106,42 @@ int get_header(struct Header *header, char *input) {
                 char *accept_extract = malloc(sizeof(char) * (strlen(extract_token)));
                 int x = sscanf(extract_token, "%*s %s", accept_extract);
                 if (x != 1) {
+                    free(accept_extract);
+                    free(extract_token);
                     return -1;
                 }
                 strcpy(header->accept, accept_extract);
-                printf("Accept: |%s|\n", header->accept);
+                //printf("Accept: |%s|\n", header->accept);
                 free(accept_extract);
             }
         }
         //Pull Conditional: IF MODIFIED
         if (contains(extract_token, IF_MODIFIED) == 0) {
-            printf("extract token if modified: %s\n", extract_token);
+            //printf("extract token if modified: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
             int x = sscanf(extract_token, "If-Modified-Since: %[^\t\n]", output);
             if (x != 1) {
+                free(output);
+                free(extract_token);
                 return -1;
             }
             header->if_modified_since = malloc(sizeof(char) * (strlen(output)));
-            printf("if_modified_since : %s\n", output);
+            //printf("if_modified_since : %s\n", output);
             strcpy(header->if_modified_since, output);
             free(output);
         }
 
         //Pull Conditional: IF UNMODIFIED
         if (contains(extract_token, IF_UNMODIFIED) == 0) {
-            printf("extract token if unmodified: %s\n", extract_token);
+            //printf("extract token if unmodified: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
             int x = sscanf(extract_token, "If-Unmodified-Since: %[^\t\n]", output);
             if (x != 1) {
+                free(output);
+                free(extract_token);
                 return -1;
             }
-            printf("%s\n", output);
+            //printf("%s\n", output);
 
             header->if_unmodified_since = malloc(sizeof(char) * (strlen(output)));
             printf("if_unmodified_since : %s\n", output);
@@ -130,17 +151,18 @@ int get_header(struct Header *header, char *input) {
 
         //PULL CONNECTION header
         if (contains(extract_token, CONNECTION) == 0) {
-            printf("extract token CONNECTION: %s\n", extract_token);
+            //printf("extract token CONNECTION: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
-            sscanf(extract_token, "Connection: %[^\t\n]", output);
-
-            header->connectiontype = malloc(sizeof(char) * (strlen(output)));
-            printf("Connection : %s\n", output);
-            strcpy(header->connectiontype, output);
+            int x = sscanf(extract_token, "Connection: %[^\t\n]", output);
+            if(x == 1) {
+                header->connectiontype = malloc(sizeof(char) * (strlen(output)));
+                //printf("Connection : %s\n", output);
+                strcpy(header->connectiontype, output);
+            }
             free(output);
         }
 
-        printf(" %s \n", token);
+        //printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }
 
@@ -155,6 +177,7 @@ int get_header(struct Header *header, char *input) {
                            ->connectiontype, TYPE_KEEPALIVE);
         } else {
             //if there is no CONNECTION header or HTTP VERSION but this should've failed already
+            free(extract_token);
             return -1;
         }
     }
@@ -175,7 +198,7 @@ void handler(int socket, struct Header *header, char *root_address) {
     int fp;
     if ((fp = open(full_path, O_RDONLY)) > 0) //FILE FOUND
     {
-        printf("%s Found\n", header->filetype);
+        //printf("%s Found\n", header->filetype);
         int bytes;
         char buffer[BUFFER_SIZE];
 
@@ -196,7 +219,8 @@ void handler(int socket, struct Header *header, char *root_address) {
                 }
                 //Write is not working sending bad response TODO
                 write(socket, error_response,strlen(error_response));
-                printf("wrote 304\n");
+               // printf("wrote 304\n");
+                free(error_response);
                 free(full_path);
                 return;
             }
@@ -214,7 +238,8 @@ void handler(int socket, struct Header *header, char *root_address) {
                 }
                 //Write is not working sending bad response TODO
                 write(socket, error_response,strlen(error_response));
-                printf("wrote 304\n");
+            //    printf("wrote 304\n");
+                free(error_response);
                 free(full_path);
                 return;
             }
@@ -223,15 +248,21 @@ void handler(int socket, struct Header *header, char *root_address) {
         //generate response
         char *response = compile_response(header, OK, file_size, full_path);
         send(socket, response, strlen(response), 0);
+        free(response);
 
         // Read the file to buffer. If not the end of the file, then continue reading the file
         while ((bytes = read(fp, buffer, BUFFER_SIZE)) > 0)
             write(socket, buffer, bytes);
         close(fp);
     } else {
-        write(socket,
-              "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File or File Extension not found</body></html>",
-              strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+        char *error_response = (char *) malloc((strlen(RESPONSE_404_0)) * sizeof(char));
+        if (header->http_version == 0) {
+            strcpy(error_response, RESPONSE_404_0);
+        } else {
+            strcpy(error_response, RESPONSE_404_1);
+        }
+        write(socket, error_response,strlen(RESPONSE_404_0));
+        free(error_response);
     }
     free(full_path);
 }

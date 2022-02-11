@@ -16,7 +16,7 @@ struct Header header;
 char *root_address;
 
 void *thread_handler(void *socket_desc) {
-    printf("inside handler\n");
+    //printf("inside handler\n");
 //    char buffer[BUFFER_SIZE];
 
     int sock = *(int *) socket_desc;
@@ -37,38 +37,43 @@ void *thread_handler(void *socket_desc) {
     header.if_unmodified_since = NULL;
     header.connectiontype = NULL;
     header.http_version = 1;
-    int x = 1, get_header_output;
+    int get_header_output;
     char buffer[30000];
     while (read(sock, buffer, 30000) > 0) {
 
 
-        printf("return read |%d|\n", x);
+        //printf("return read |%d|\n", x);
 
         get_header_output = get_header(&header, buffer);
 
         if (get_header_output > 0) {
 
 
-            printf("return header: |%d|", get_header_output);
+            //printf("return header: |%d|", get_header_output);
             //take out the last / if it exists because we add it in request filename.
             if (root_address[strlen(root_address) - 1] == '/') {
                 root_address[strlen(root_address) - 1] = '\0';
             }
 
-            printf("root_address: |%s|\n", root_address);
-            printf("|%d| filename: |%s|", sock, header.filename);
+            //printf("root_address: |%s|\n", root_address);
+            //printf("|%d| filename: |%s|", sock, header.filename);
             handler(sock, &header, root_address);
 
+        }
+        else {
+            write(sock,
+                  "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>",
+                  strlen("HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Modified</body></html>"));
         }
         free_memory(&header);
 
     }
     free_memory(&header);
     sleep(1);
-    printf("CLIENT CONNECTION CLOSED\n");
+    //printf("CLIENT CONNECTION CLOSED\n");
     close(sock); //TODO
     free(socket_desc);
-    printf("EXITING THREAD\n");
+    //printf("EXITING THREAD\n");
     pthread_exit(NULL);
 
 //
@@ -87,8 +92,8 @@ int main(int argc, char *argv[]) {
     //Get Arguments
     int port_number = atoi(argv[1]);
     root_address = argv[2];
-    printf("Port Number:  %d\n", port_number);
-    printf("Root Address: %s\n", root_address);
+    //printf("Port Number:  %d\n", port_number);
+    //printf("Root Address: %s\n", root_address);
 
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
@@ -104,7 +109,7 @@ int main(int argc, char *argv[]) {
     if (root_address[strlen(root_address) - 1] == '/') {
         root_address[strlen(root_address) - 1] = '\0';
     }
-    printf("root_address: %s\n", root_address);
+    //printf("root_address: %s\n", root_address);
 
     int server, client_socket;
     struct sockaddr_in serverAddress;
@@ -133,7 +138,7 @@ int main(int argc, char *argv[]) {
         printf("Error: The server is not listening.\n");
         return 1;
     }
-    printf("listening output: %d\n", listening);
+    //printf("listening output: %d\n", listening);
 
     pthread_t thread;
     int *send_sock;
@@ -147,12 +152,12 @@ int main(int argc, char *argv[]) {
         send_sock = malloc(1);
         *send_sock = client_socket;
 
-        printf("NEW THREAD\n");
+        //printf("NEW THREAD\n");
         if (pthread_create(&thread, NULL, thread_handler, (void *) send_sock) != 0) {
+            sleep(3);
             printf("Failed to create thread\n");
         }
 
     }
-    return 0;
 }
 
