@@ -64,15 +64,20 @@ int get_header(struct Header *header, char *input) {
 
             printf("CONTAIN RETURN: |%d|\n",contains(file_type, HTML) );
 
-            if (contains(file_type, JPG) == 0 || contains(file_type, JPEG) == 0) {
+            if (contains(file_type, JPG) == 0 || contains(file_type, JPEG) == 0 || contains(file_type, PNG) == 0) {
                 header->type = malloc(sizeof(char) * (strlen(IMAGE)));
                 strcpy(header->type, IMAGE);
-            } else if (contains(file_type, CSS) == 0 || contains(file_type, HTML) == 0 || contains(file_type, JS) == 0 ||
+            }
+            else if (contains(file_type, CSS) == 0 || contains(file_type, HTML) == 0 || contains(file_type, JS) == 0 ||
                        contains(file_type, TXT) == 0) {
 
                 header->type = malloc(sizeof(char) * (strlen(TEXT)));
                 strcpy(header->type, TEXT);
             }
+            else {
+                return -1;
+            }
+
             printf("CONTENT TYPE SAVE: |%s|\n", header->type);
 
             free(file_name);
@@ -93,7 +98,7 @@ int get_header(struct Header *header, char *input) {
                 free(accept_extract);
             }
         }
-        //PULL CONDITIONAL (Currently only if modified)
+        //Pull Conditional: IF MODIFIED
         if (contains(extract_token, IF_MODIFIED) == 0) {
             printf("extract token if modified: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
@@ -106,6 +111,8 @@ int get_header(struct Header *header, char *input) {
             strcpy(header->if_modified_since, output);
             free(output);
         }
+
+        //Pull Conditional: IF UNMODIFIED
         if (contains(extract_token, IF_UNMODIFIED) == 0) {
             printf("extract token if unmodified: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
@@ -121,6 +128,7 @@ int get_header(struct Header *header, char *input) {
             free(output);
         }
 
+        //PULL CONNECTION header
         if (contains(extract_token, CONNECTION) == 0) {
             printf("extract token CONNECTION: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
@@ -135,7 +143,8 @@ int get_header(struct Header *header, char *input) {
         printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }
-//if there was no connection type
+
+    //If there is no CONNECTION header
     if (header->connectiontype == NULL) {
         header->connectiontype = malloc(sizeof(char) * (100));
         if (header->http_version == 0) {
@@ -145,9 +154,8 @@ int get_header(struct Header *header, char *input) {
             strcpy(header
                            ->connectiontype, TYPE_KEEPALIVE);
         } else {
-//if there is no connectiontype header and no http_version but this should've failed already
-            strcpy(header
-                           ->connectiontype, TYPE_CLOSE);
+            //if there is no CONNECTION header or HTTP VERSION but this should've failed already
+            return -1;
         }
     }
     free(extract_token);
@@ -155,14 +163,13 @@ int get_header(struct Header *header, char *input) {
 }
 
 
-/*
- *
- */
+//process client request
 void handler(int socket, struct Header *header, char *root_address) {
     char *file_name = header->filename;
     char *full_path = (char *) malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
 
-    strcpy(full_path, root_address); // Merge the file name that requested and path of the root folder
+    // Merge the file name and path of the root folder
+    strcpy(full_path, root_address);
     strcat(full_path, file_name);
 
     int fp;
@@ -177,37 +184,49 @@ void handler(int socket, struct Header *header, char *root_address) {
         stat(full_path, &st);
         long file_size = st.st_size;
 
+        //handling if_modified_since conditional
         if (header->if_modified_since != NULL) {
             int resp = if_modified_since_time_diff(header, full_path);
             if (resp == -1) {
+                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)) * sizeof(char));
+                if (header->http_version == 0) {
+                    strcpy(error_response, RESPONSE_304_0);
+                } else {
+                    strcpy(error_response, RESPONSE_304_1);
+                }
                 //Write is not working sending bad response TODO
-                write(socket,
-                      "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>",
-                      strlen("HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>"));
+                write(socket, error_response,strlen(error_response));
                 printf("wrote 304\n");
                 free(full_path);
                 return;
             }
         }
+
+        //handling if_unmodified_since conditional
         if (header->if_unmodified_since != NULL) {
             int resp = if_unmodified_since_time_diff(header, full_path);
             if (resp == -1) {
+                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)) * sizeof(char));
+                if (header->http_version == 0) {
+                    strcpy(error_response, RESPONSE_304_0);
+                } else {
+                    strcpy(error_response, RESPONSE_304_1);
+                }
                 //Write is not working sending bad response TODO
-                write(socket,
-                      "HTTP/1.0 404 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>",
-                      strlen("HTTP/1.0 404 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>"));
+                write(socket, error_response,strlen(error_response));
                 printf("wrote 304\n");
                 free(full_path);
                 return;
             }
         }
 
-        char *response = compile_response(header, OK, file_size, full_path); //generate response
+        //generate response
+        char *response = compile_response(header, OK, file_size, full_path);
         send(socket, response, strlen(response), 0);
 
-        while ((bytes = read(fp, buffer, BUFFER_SIZE)) >
-               0) // Read the file to buffer. If not the end of the file, then continue reading the file
-            write(socket, buffer, bytes); // Send the part of the jpeg to client.
+        // Read the file to buffer. If not the end of the file, then continue reading the file
+        while ((bytes = read(fp, buffer, BUFFER_SIZE)) > 0)
+            write(socket, buffer, bytes);
         close(fp);
     } else {
         write(socket,
@@ -217,7 +236,7 @@ void handler(int socket, struct Header *header, char *root_address) {
     free(full_path);
 }
 
-// TODO add more
+// freeing malloced variables
 void free_memory(struct Header *header) {
     if (header->accept != NULL) {
         free(header->accept);
