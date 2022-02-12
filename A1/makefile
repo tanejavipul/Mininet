@@ -17,38 +17,7 @@ PersistentServer: PersistentServer.o ServerHelper.o Parser.o
 PipelinedServer: PipelinedServer.c
 	gcc ${FLAGS} -o $@ $<
 
-test: Test.o
-	gcc ${FLAGS} -o $@ $<
-
 all: clean SimpleServer PersistentServer PipelinedServer
 
 clean:
-	rm -f SimpleServer PersistentServer PipelinedServer *.o test
-
-
-
-
-
-
-
-# DONT TOUCH
-#
-#.PHONY: all test_vs clean
-#all: test_vs
-#
-#validate_sin: validate_sin.o sin_helpers.o
-#	gcc ${FLAGS} -o $@ $^
-#
-#%.o: %.c
-#	gcc ${FLAGS} -c $<
-#
-#test_vs: validate_sin
-#	@test_vs_output=`./validate_sin 810620716`; \
-#	if [ "$$test_vs_output" == "Valid SIN" ]; then \
-#		echo Compiled and sanity check passed; \
-#	else \
-#		echo Failed sanity check; \
-#	fi
-#
-#clean:
-#	rm -f *.o validate_sin
+	rm -f SimpleServer PersistentServer PipelinedServer *.o
