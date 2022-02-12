@@ -16,11 +16,10 @@ struct Header header;
 char *root_address;
 
 void *thread_handler(void *socket_desc) {
-    //printf("inside handler\n");
-//    char buffer[BUFFER_SIZE];
 
     int sock = *(int *) socket_desc;
     free(socket_desc);
+
     //struct for timeout
     struct timeval timeout;
     timeout.tv_sec = 3;
@@ -42,22 +41,15 @@ void *thread_handler(void *socket_desc) {
     char buffer[30000];
     while (read(sock, buffer, 30000) > 0) {
 
-
-        //printf("return read |%d|\n", x);
-
         get_header_output = get_header(&header, buffer);
 
         if (get_header_output > 0) {
 
 
-            //printf("return header: |%d|", get_header_output);
-            //take out the last / if it exists because we add it in request filename.
             if (root_address[strlen(root_address) - 1] == '/') {
                 root_address[strlen(root_address) - 1] = '\0';
             }
 
-            //printf("root_address: |%s|\n", root_address);
-            //printf("|%d| filename: |%s|", sock, header.filename);
             handler(sock, &header, root_address);
 
         }
@@ -76,18 +68,10 @@ void *thread_handler(void *socket_desc) {
     }
     free_memory(&header);
     sleep(1);
-    close(sock); //TODO
-//    free(socket_desc);
+    close(sock);
     pthread_exit(NULL);
-
-//
     }
-//    free_memory(&header);
-//    sleep(1);
-//    printf("CLIENT CONNECTION CLOSED\n");
-//   // close(sock); //TODO
-//    printf("EXITING THREAD\n");
-//    pthread_exit(NULL);
+
 
 
 
@@ -96,8 +80,8 @@ int main(int argc, char *argv[]) {
     //Get Arguments
     int port_number = atoi(argv[1]);
     root_address = argv[2];
-    //printf("Port Number:  %d\n", port_number);
-    //printf("Root Address: %s\n", root_address);
+    printf("Port Number:  %d\n", port_number);
+    printf("Root Address: %s\n", root_address);
 
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
@@ -113,7 +97,6 @@ int main(int argc, char *argv[]) {
     if (root_address[strlen(root_address) - 1] == '/') {
         root_address[strlen(root_address) - 1] = '\0';
     }
-    //printf("root_address: %s\n", root_address);
 
     int server, client_socket;
     struct sockaddr_in serverAddress;
@@ -122,14 +105,6 @@ int main(int argc, char *argv[]) {
         perror("socket failed");
         exit(-1);
     }
-
-    // This is to lose the pesky "Address already in use" error message
-//    if (setsockopt(server, SOL_SOCKET, SO_KEEPALIVE,
-//                   &opt, sizeof(opt))) // SOL_SOCKET is the socket layer itself
-//    {
-//        perror("setsockopt");
-//        exit(EXIT_FAILURE);
-//    }
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port_number); //port number provided
@@ -142,12 +117,11 @@ int main(int argc, char *argv[]) {
         printf("Error: The server is not listening.\n");
         return 1;
     }
-    //printf("listening output: %d\n", listening);
+    printf("------------------- Pipeline Server -------------------\n");
 
     pthread_t thread;
     int *send_sock;
     while (1) { //while loop so it can process more connections that come in
-        printf("--------------REQUESTS--------------\n");
         //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
         if ((client_socket = accept(server, NULL, NULL)) < 0) {
             perror("ACCEPT FAILED");
@@ -156,9 +130,7 @@ int main(int argc, char *argv[]) {
         send_sock = malloc(1);
         *send_sock = client_socket;
 
-        //printf("NEW THREAD\n");
         if (pthread_create(&thread, NULL, thread_handler, (void *) send_sock) != 0) {
-            sleep(3);
             printf("Failed to create thread\n");
         }
         pthread_detach(thread);

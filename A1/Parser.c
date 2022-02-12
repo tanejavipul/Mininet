@@ -46,10 +46,10 @@ char *MIME = "MIME-version: 1.0\r\n";
 char *LAST_MODIFIED = "Last-Modified: ";
 
 //Error Response
-char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
-char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
+char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\n\r\n";
+char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\n\r\n";
+char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\n\r\n";
+char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\n\r\n";
 
 //Request and Response
 char* CONNECTION = "Connection:";
@@ -92,6 +92,9 @@ struct Header {
  * Returns 0 if word found in string else -1
  */
 int contains(char* string, char* word) {
+    if(string == NULL || word == NULL) {
+        return -1;
+    }
     int string_len = strlen(string);
     int word_len = strlen(word);
     int x = 0;
@@ -330,7 +333,7 @@ int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
 
     double diff = difftime(mktime(&header_unmodified_time), mktime(gmtime(&file_unmodified_time.st_mtime)));
 
-    if ( diff < 0 ) {
+    if (diff < 0) {
         //printf("%s is newer than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
         //failed
         return -1;
@@ -339,45 +342,3 @@ int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
         return 0;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// DEPRECATED CODE
-char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
-    char* x = strstr(big,small);
-    return x;
-}
-
-int find_str_index(char* big, char* small) { //problems
-    char* x = strstr(big,small);
-    return x-big;
-}
-
-char* get_root_filename_path(char* root_path, char* filename){
-    int rootlen = strlen(root_path);
-    int filelen = strlen(filename);
-    char *output = malloc( (rootlen+filelen+1) * sizeof(char));
-    strcpy(output, root_path);
-    strcat(output,filename);
-    return output;
-}
-
-
-
-

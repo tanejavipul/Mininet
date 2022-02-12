@@ -12,26 +12,28 @@ Content-Length: 2345
 <HTML> ...
  */
 
-
-//    get_header(&request, buffer);
+/*
+ * Returns -1 if request header have issues
+ * Returns 200 if everything is fine with request
+ * This function only extracts headers.
+ */
 int get_header(struct Header *header, char *input) {
-//    printf("INSIDE GET_HEADER: %s\n", input);
-
     char *main_strtok_pointer = NULL;
     char *extract_token = malloc(sizeof(char) * 10000);
 
-    char *token = strtok_r(input, END_OF_LINE, &main_strtok_pointer); //DO NOT USE STRTOK BAD
+    char *token = strtok_r(input, END_OF_LINE, &main_strtok_pointer); //DO NOT USE STRTOK "BAD"
+
     // LOOP THROUGH INPUT AND BREAK IT INTO SPERATE LINES USING '\r\n'
     while (token != NULL) {
         strcpy(extract_token, token);
 
         //PULL FILENAME + FILE TYPE + HTTP VERSION
         if (contains(extract_token, GET) == 0) {
-            header->filename = malloc(sizeof(char) * (strlen(extract_token)));
-            header->filetype = malloc(sizeof(char) * (strlen(extract_token)));
+            header->filename = malloc(sizeof(char) * (strlen(extract_token)+10));
+            header->filetype = malloc(sizeof(char) * (strlen(extract_token)+10));
 
-            char *http_version = (char *) malloc(sizeof(char) * strlen(extract_token));
-            char *file_name = (char *) malloc(sizeof(char) * strlen(extract_token));
+            char *http_version = (char *) malloc(sizeof(char) * strlen(extract_token)+10);
+            char *file_name = (char *) malloc(sizeof(char) * strlen(extract_token)+10);
             char *file_type;
 
             //EXTRACT FILENAME AND HTTP VERSION
@@ -50,6 +52,7 @@ int get_header(struct Header *header, char *input) {
             } else if (contains(http_version, HTTP11) == 0) {
                 header->http_version = 1;
             } else {
+
                 // IN CASE NO OR IMPROPER HTTP VERSION
                 free(http_version);
                 free(file_name);
@@ -71,18 +74,15 @@ int get_header(struct Header *header, char *input) {
             }
             strcpy(header->filetype, &file_type[1]); //to get rid of '.' char
 
-            //printf("Filename: |%s| Filetype: |%s|\n", header->filename, header->filetype);
-
-            //printf("CONTAIN RETURN: |%d|\n",contains(file_type, HTML) );
 
             if (contains(file_type, JPG) == 0 || contains(file_type, JPEG) == 0 || contains(file_type, PNG) == 0) {
-                header->type = malloc(sizeof(char) * (strlen(IMAGE)));
+                header->type = malloc(sizeof(char) * (strlen(IMAGE)+10));
                 strcpy(header->type, IMAGE);
             }
             else if (contains(file_type, CSS) == 0 || contains(file_type, HTML) == 0 || contains(file_type, JS) == 0 ||
                        contains(file_type, TXT) == 0) {
 
-                header->type = malloc(sizeof(char) * (strlen(TEXT)));
+                header->type = malloc(sizeof(char) * (strlen(TEXT)+10));
                 strcpy(header->type, TEXT);
             }
             else {
@@ -92,8 +92,6 @@ int get_header(struct Header *header, char *input) {
                 return -1;
             }
 
-            //printf("CONTENT TYPE SAVE: |%s|\n", header->type);
-
             free(file_name);
             free(http_version);
         }
@@ -102,8 +100,8 @@ int get_header(struct Header *header, char *input) {
         if (contains(extract_token, ACCEPT) == 0) {
             //check if accept field is not empty
             if (contains(extract_token, ACCEPT_EMPTY) != 0) {
-                header->accept = malloc(sizeof(char) * (strlen(extract_token)));
-                char *accept_extract = malloc(sizeof(char) * (strlen(extract_token)));
+                header->accept = malloc(sizeof(char) * (strlen(extract_token)+10));
+                char *accept_extract = malloc(sizeof(char) * (strlen(extract_token)+10));
                 int x = sscanf(extract_token, "%*s %s", accept_extract);
                 if (x != 1) {
                     free(accept_extract);
@@ -117,23 +115,20 @@ int get_header(struct Header *header, char *input) {
         }
         //Pull Conditional: IF MODIFIED
         if (contains(extract_token, IF_MODIFIED) == 0) {
-            //printf("extract token if modified: %s\n", extract_token);
-            char *output = malloc(sizeof(char) * (strlen(extract_token)));
+            char *output = malloc(sizeof(char) * (strlen(extract_token)+10));
             int x = sscanf(extract_token, "If-Modified-Since: %[^\t\n]", output);
             if (x != 1) {
                 free(output);
                 free(extract_token);
                 return -1;
             }
-            header->if_modified_since = malloc(sizeof(char) * (strlen(output)));
-            //printf("if_modified_since : %s\n", output);
+            header->if_modified_since = malloc(sizeof(char) * (strlen(output)+10));
             strcpy(header->if_modified_since, output);
             free(output);
         }
 
         //Pull Conditional: IF UNMODIFIED
         if (contains(extract_token, IF_UNMODIFIED) == 0) {
-            //printf("extract token if unmodified: %s\n", extract_token);
             char *output = malloc(sizeof(char) * (strlen(extract_token)));
             int x = sscanf(extract_token, "If-Unmodified-Since: %[^\t\n]", output);
             if (x != 1) {
@@ -141,9 +136,8 @@ int get_header(struct Header *header, char *input) {
                 free(extract_token);
                 return -1;
             }
-            //printf("%s\n", output);
 
-            header->if_unmodified_since = malloc(sizeof(char) * (strlen(output)));
+            header->if_unmodified_since = malloc(sizeof(char) * (strlen(output)+10));
             printf("if_unmodified_since : %s\n", output);
             strcpy(header->if_unmodified_since, output);
             free(output);
@@ -152,23 +146,22 @@ int get_header(struct Header *header, char *input) {
         //PULL CONNECTION header
         if (contains(extract_token, CONNECTION) == 0) {
             //printf("extract token CONNECTION: %s\n", extract_token);
-            char *output = malloc(sizeof(char) * (strlen(extract_token)));
+            char *output = malloc(sizeof(char) * (strlen(extract_token)+10));
             int x = sscanf(extract_token, "Connection: %[^\t\n]", output);
             if(x == 1) {
-                header->connectiontype = malloc(sizeof(char) * (strlen(output)));
-                //printf("Connection : %s\n", output);
+                header->connectiontype = malloc(sizeof(char) * (strlen(output)+10));
                 strcpy(header->connectiontype, output);
             }
+
             free(output);
         }
 
-        //printf(" %s \n", token);
         token = strtok_r(NULL, END_OF_LINE, &main_strtok_pointer);
     }
 
     //If there is no CONNECTION header
     if (header->connectiontype == NULL) {
-        header->connectiontype = malloc(sizeof(char) * (100));
+        header->connectiontype = malloc(sizeof(char) * (110));
         if (header->http_version == 0) {
             strcpy(header
                            ->connectiontype, TYPE_CLOSE);
@@ -189,18 +182,20 @@ int get_header(struct Header *header, char *input) {
 //process client request
 void handler(int socket, struct Header *header, char *root_address) {
     char *file_name = header->filename;
-    char *full_path = (char *) malloc((strlen(root_address) + strlen(file_name)) * sizeof(char));
+    char *full_path = (char *) malloc((strlen(root_address) + strlen(file_name)+10) * sizeof(char));
 
     // Merge the file name and path of the root folder
     strcpy(full_path, root_address);
     strcat(full_path, file_name);
 
     int fp;
+    printf("here\n");
     if ((fp = open(full_path, O_RDONLY)) > 0) //FILE FOUND
     {
         //printf("%s Found\n", header->filetype);
         int bytes;
         char buffer[BUFFER_SIZE];
+        printf("open\n");
 
         //getting file size
         struct stat st;
@@ -211,7 +206,7 @@ void handler(int socket, struct Header *header, char *root_address) {
         if (header->if_modified_since != NULL) {
             int resp = if_modified_since_time_diff(header, full_path);
             if (resp == -1) {
-                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)) * sizeof(char));
+                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)+10) * sizeof(char));
                 if (header->http_version == 0) {
                     strcpy(error_response, RESPONSE_304_0);
                 } else {
@@ -230,7 +225,7 @@ void handler(int socket, struct Header *header, char *root_address) {
         if (header->if_unmodified_since != NULL) {
             int resp = if_unmodified_since_time_diff(header, full_path);
             if (resp == -1) {
-                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)) * sizeof(char));
+                char *error_response = (char *) malloc((strlen(RESPONSE_304_0)+10) * sizeof(char));
                 if (header->http_version == 0) {
                     strcpy(error_response, RESPONSE_304_0);
                 } else {
@@ -250,12 +245,16 @@ void handler(int socket, struct Header *header, char *root_address) {
         send(socket, response, strlen(response), 0);
         free(response);
 
+        printf("here\n");
+
         // Read the file to buffer. If not the end of the file, then continue reading the file
         while ((bytes = read(fp, buffer, BUFFER_SIZE)) > 0)
             write(socket, buffer, bytes);
         close(fp);
     } else {
-        char *error_response = (char *) malloc((strlen(RESPONSE_404_0)) * sizeof(char));
+        printf("here\n");
+
+        char *error_response = (char *) malloc((strlen(RESPONSE_404_0)+10) * sizeof(char));
         if (header->http_version == 0) {
             strcpy(error_response, RESPONSE_404_0);
         } else {
@@ -264,6 +263,8 @@ void handler(int socket, struct Header *header, char *root_address) {
         write(socket, error_response,strlen(RESPONSE_404_0));
         free(error_response);
     }
+    printf("freeeeee\n");
+
     free(full_path);
 }
 
@@ -304,4 +305,5 @@ void free_memory(struct Header *header) {
     header->if_modified_since = NULL;
     header->if_unmodified_since = NULL;
     header->connectiontype = NULL;
+    printf("done\n");
 }
