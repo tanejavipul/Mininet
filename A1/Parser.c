@@ -46,10 +46,18 @@ char *MIME = "MIME-version: 1.0\r\n";
 char *LAST_MODIFIED = "Last-Modified: ";
 
 //Error Response
-char *RESPONSE_304_1 = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_1 = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
-char *RESPONSE_304_0 = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>304 Not Modified</body></html>";
-char *RESPONSE_404_0 = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 Not Found</body></html>";
+char *RESPONSE_304_1_CLOSE = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_404_1_CLOSE = "HTTP/1.1 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_400_1_CLOSE = "HTTP/1.1 400 BAD REQUEST\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+
+char *RESPONSE_304_0_CLOSE = "HTTP/1.0 304 NOT MODIFIED\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_404_0_CLOSE = "HTTP/1.0 404 NOT FOUND\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_400_0_CLOSE = "HTTP/1.0 400 BAD REQUEST\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+
+char *RESPONSE_304_KEEP = "HTTP/1.1 304 NOT MODIFIED\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_404_KEEP = "HTTP/1.1 404 NOT FOUND\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+char *RESPONSE_400_KEEP = "HTTP/1.1 400 BAD REQUEST\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
+
 
 //Request and Response
 char* CONNECTION = "Connection:";
@@ -92,6 +100,9 @@ struct Header {
  * Returns 0 if word found in string else -1
  */
 int contains(char* string, char* word) {
+    if(string == NULL) {
+        return -1;
+    }
     int string_len = strlen(string);
     int word_len = strlen(word);
     int x = 0;
@@ -128,7 +139,6 @@ char *status_response( struct Header *header, char *status){
         snprintf(output, x, "%s %s %s", HTTP11,status,END_OF_LINE); //HTTP 1.1
     }
 
-    //printf("STATUS_RESPONSE: %s",output);
     return output;
 }
 
@@ -142,8 +152,6 @@ char *date_response() {
     //returns a int for response code
     snprintf(output, 100, "%s %s, %d %s %d %d:%d:%d %s\r\n", DATE, DAYS_OF_WEEK[tm->tm_wday],tm->tm_mday,MONTH[tm->tm_mon], tm->tm_year+1900,tm->tm_hour,tm->tm_min,tm->tm_sec,"GMT");
 
-
-    //printf("DATE_RESPONSE: %s",output);
     return output;
 }
 
@@ -153,7 +161,6 @@ char *content_type(struct Header *header) {
 
     snprintf(output, 100, "%s %s%s%s", CONTENT_TYPE,header->type,header->filetype,END_OF_LINE);
 
-    //printf("CONTENT_TYPE_RESPONSE: %s",output);
     return output;
 }
 
@@ -163,7 +170,6 @@ char *content_length(int length) {
 
     snprintf(output, 100, "%s %d\r\n", CONTENT_LENGTH,length);
 
-    //printf("CONTENT_LENGTH_RESPONSE: %s",output);
     return output;
 }
 
@@ -173,9 +179,7 @@ char *connection_type(struct Header *header) {
 
     snprintf(output, 100, "%s %s%s", CONNECTION,header->connectiontype,END_OF_LINE);
 
-    //printf("CONNECTION_RESPONSE: %s",output);
     return output;
-
 }
 
 //KEEPALIVE TIME response
@@ -184,9 +188,7 @@ char *keepalive_time() {
 
     snprintf(output, 100, "%s%d%s", KEEP_ALIVE,2,END_OF_LINE);
 
-    //printf("KEEPALIVE_RESPONSE: %s",output);
     return output;
-
 }
 
 //LAST MODIFIED response
@@ -201,7 +203,6 @@ char *last_modified_response(char *full_path) {
 
     strcpy(output, LAST_MODIFIED);
     strcat(output, last_modified_time);
-    //printf("completed last modified\n");
     //ADDED
     free(last_modified_time);
     return output;
@@ -234,7 +235,6 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     }
     strcat(output,END_OF_LINE); //not using END_OF_HEADER because last header may already have /r/n at the end
 
-
     free(status_r);
     free(date);
     free(content_t);
@@ -242,7 +242,6 @@ char *compile_response(struct Header *header, char *status, int length, char *fu
     free(last_modify);
     free(connection_t);
     free(keepalive);
-    //printf("COMPILED RESPONSE:\n%s", output);
     return output;
 }
 
@@ -259,7 +258,6 @@ void update_tm_struct(char *extract_time, struct tm *timestamp){
     sscanf(extract_time, "%s %d %s %d %d:%d:%d %s", weekday_char, &day, month_char, &year, &hour, &min, &sec, timezone );
     //take out the , in the weekday
     weekday_char[strlen(weekday_char)-1] = '\0';
-//    printf("weekday_char: %s, day: %d , year: %d, hour: %d , min: %d, sec: %d\n", weekday_char, day, year, hour, min, sec);
 
     int month = 0;
     for ( int i = 0; MONTH[i] != NULL; i++) {
@@ -284,100 +282,47 @@ void update_tm_struct(char *extract_time, struct tm *timestamp){
     timestamp->tm_hour = hour;
     timestamp->tm_min = min;
     timestamp->tm_sec = sec;
-    //printf("completed update\n");
 }
 
 
 int if_modified_since_time_diff (struct Header *header, char *full_path) {
-    //    printf("timestamp: %s\n", asctime (&timestamp));
-    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
-    //printf("starting time diff last modified\n");
-
 
     // file modified time
     struct stat file_modified_time;
     stat(full_path, &file_modified_time);
 
     // header modified time
-    struct tm header_modified_time; // malloc(sizeof(struct tm)); may need to malloc
+    struct tm header_modified_time;
     update_tm_struct(header->if_modified_since, &header_modified_time);
 
     double diff = difftime(mktime(&header_modified_time), mktime(gmtime(&file_modified_time.st_mtime)));
 
     if ( diff > 0 ) {
-        //printf("%s is newer than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
-        //failed
+        //failed if modified is newer than file time
         return -1;
     } else {
-        //printf("%s is older than %s\n", header->if_modified_since, asctime (gmtime(&file_modified_time.st_mtime)));
+        //passed file time is newer than if modified
         return 0;
     }
 }
 
 int if_unmodified_since_time_diff (struct Header *header, char *full_path) {
-    //    printf("timestamp: %s\n", asctime (&timestamp));
-    //    printf("timestamp2: %s\n", asctime (gmtime(&attr.st_mtime)));
-    //printf("starting time diff last modified\n");
-
 
     // file modified time
     struct stat file_unmodified_time;
     stat(full_path, &file_unmodified_time);
 
     // header modified time
-    struct tm header_unmodified_time; // malloc(sizeof(struct tm)); may need to malloc
+    struct tm header_unmodified_time;
     update_tm_struct(header->if_unmodified_since, &header_unmodified_time);
 
     double diff = difftime(mktime(&header_unmodified_time), mktime(gmtime(&file_unmodified_time.st_mtime)));
 
     if ( diff < 0 ) {
-        //printf("%s is newer than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
-        //failed
+        //failed if_unmodified is older than file time
         return -1;
     } else {
-        //printf("%s is older than %s\n", header->if_unmodified_since, asctime (gmtime(&file_unmodified_time.st_mtime)));
+        //passed if_unmodified is newer than file time
         return 0;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// DEPRECATED CODE
-char* find_str_pointer(char* big, char* small) { //NULL is returned if not found
-    char* x = strstr(big,small);
-    return x;
-}
-
-int find_str_index(char* big, char* small) { //problems
-    char* x = strstr(big,small);
-    return x-big;
-}
-
-char* get_root_filename_path(char* root_path, char* filename){
-    int rootlen = strlen(root_path);
-    int filelen = strlen(filename);
-    char *output = malloc( (rootlen+filelen+1) * sizeof(char));
-    strcpy(output, root_path);
-    strcat(output,filename);
-    return output;
-}
-
-
-
-

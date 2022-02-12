@@ -12,20 +12,18 @@ Content-Length: 2345
 <HTML> ...
  */
 int main( int argc, char *argv[] )  {
+
+    if (argc != 3) {
+        fprintf(stderr, "Invalid Number of Arguments!\n");
+        return -1;
+    }
+
     //Get Arguments
     int port_number = atoi(argv[1]);
     char *root_address = argv[2];
 
- //   printf("Port Number:  %d\n", port_number);
-   // printf("Root Address: %s\n", root_address);
-
-    if (argc != 3) {
-      //  fprintf(stderr, "Invalid Number of Arguments!\n");
-        return -1;
-    }
-
     if(access(root_address, F_OK) != 0) {
-     //   fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));
+        fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));
         return -1;
     }
 
@@ -45,7 +43,7 @@ int main( int argc, char *argv[] )  {
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
-        //fprintf(stderr, "socket failed");
+        fprintf(stderr, "socket failed");
         return -1;
     }
 
@@ -58,14 +56,11 @@ int main( int argc, char *argv[] )  {
     int listening = listen(server, 10);
     if (listening < 0)
     {
-       // printf("Error: The server is not listening.\n");
+        fprintf(stderr, "The server is not listening");
         return 1;
     }
-  //  printf("listening output: %d\n", listening);
 
     while(1) { //while loop so it can process more requests that come in
-        printf("--------------REQUESTS--------------\n");
-        //int accept(int socket, struct sockaddr *restrict address, socklen_t*restrict address_len);
         if ((new_socket = accept(server, NULL, NULL)) <0)
         {
             perror("accept");
@@ -73,45 +68,25 @@ int main( int argc, char *argv[] )  {
         }
         char buffer[30000]; //JUST TO BE SAFE IN CASE
         int input_val = read(new_socket, buffer, 30000);
-   //     printf("READ READ %d BYTES\n", input_val);
 
-        if (input_val != 0) {
+            if (input_val != 0) {
 
-            buffer[input_val] = '\0';
+                buffer[input_val] = '\0';
 
-            header_output = get_header(&header, buffer);
-            //HANDLE FOR -1
-            if (header_output > 0) {
-                //take out the last / if it exists because we add it in request filename.
-                if (root_address[strlen(root_address) - 1] == '/') {
-                    root_address[strlen(root_address) - 1] = '\0';
-                }
-            //    printf("root_address: %s\n", root_address);
-                handler(new_socket, &header, root_address);
-            } else {
-                if (header.http_version == 0) {
-                    write(new_socket, RESPONSE_404_0,strlen(RESPONSE_404_0));
+                header_output = get_header(&header, buffer);
+                header.http_version = 0;
+                if (header_output > 0) {
+                    //take out the last / if it exists because we add it in request filename.
+                    if (root_address[strlen(root_address) - 1] == '/') {
+                        root_address[strlen(root_address) - 1] = '\0';
+                    }
+                    handler(new_socket, &header, root_address);
                 } else {
-                    write(new_socket, RESPONSE_404_1,strlen(RESPONSE_404_1));
+                    //handle for -1 means bad request in headers
+                    write(new_socket, RESPONSE_400_0_CLOSE,strlen(RESPONSE_400_0_CLOSE));
                 }
-//                write(new_socket, error_response,strlen(RESPONSE_404_0));
             }
-        }
         close(new_socket);
         free_memory(&header);
-
     }
-
 }
-
-
-
-    /*
-     * Questions:
-     * - Which headers to use, and which conditional headers should we add
-     * - how should we send a get request? - curl? / do we need to write up client file (socket, connect send request etc.)
-     * - for persistant do we need to make a c client so the connection doesnt close
-     * - do we need thread for simple server as piazza post said we need to handle concurrent requests
-     * - If we have HTTP/1.1 do we downgrade to 1.0 and vice versa (1.0 upgrade to 1.1)?
-     *
-     */
