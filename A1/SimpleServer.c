@@ -41,6 +41,8 @@ int main( int argc, char *argv[] )  {
 
     header.http_version = 0;
 
+    printf("------------------- SIMPLE SERVER -------------------\n");
+
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         fprintf(stderr, "socket failed");

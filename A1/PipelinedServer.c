@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port_number); //port number provided
     serverAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK); //INADDR_LOOPBACK is local host
-
+    printf("------------------- PIPELINED SERVER -------------------\n");
     bind(server, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
 
     int listening = listen(server, 10);

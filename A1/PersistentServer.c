@@ -50,7 +50,7 @@ int main( int argc, char *argv[] )  {
     struct timeval timeout;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
-
+    printf("------------------- PERSISTENT SERVER -------------------\n");
     while(1) { //while loop so it can listen to more connections
 
         if ((new_socket = accept(server, NULL, NULL)) <0)
