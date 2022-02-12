@@ -181,7 +181,10 @@ int get_header(struct Header *header, char *input) {
 
 //process client request
 void handler(int socket, struct Header *header, char *root_address) {
+    printf("hello hand\n ");
+    printf("%s",header->filename);
     char *file_name = header->filename;
+
     char *full_path = (char *) malloc((strlen(root_address) + strlen(file_name)+10) * sizeof(char));
 
     // Merge the file name and path of the root folder
@@ -305,5 +308,5 @@ void free_memory(struct Header *header) {
     header->if_modified_since = NULL;
     header->if_unmodified_since = NULL;
     header->connectiontype = NULL;
-    printf("done\n");
+    printf("done \n");
 }

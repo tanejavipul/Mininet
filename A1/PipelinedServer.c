@@ -40,20 +40,24 @@ void *thread_handler(void *socket_desc) {
     int get_header_output;
     char buffer[30000];
     while (read(sock, buffer, 30000) > 0) {
-
+        printf("hello\n");
         get_header_output = get_header(&header, buffer);
 
         if (get_header_output > 0) {
 
+            printf("hello |%d|\n",get_header_output);
 
-            if (root_address[strlen(root_address) - 1] == '/') {
-                root_address[strlen(root_address) - 1] = '\0';
-            }
+//            if (root_address[strlen(root_address) - 1] == '/') {
+//                root_address[strlen(root_address) - 1] = '\0';
+//            }
+            printf("hell03 |%d|\n",get_header_output);
 
             handler(sock, &header, root_address);
 
         }
         else {
+            printf("in else\n");
+
             char *error_response = (char *) malloc((strlen(RESPONSE_404_0)) * sizeof(char));
             if (header.http_version == 0) {
                 strcpy(error_response, RESPONSE_404_0);
@@ -63,12 +67,17 @@ void *thread_handler(void *socket_desc) {
             write(sock, error_response,strlen(RESPONSE_404_0));
             free(error_response);
         }
+        printf("free\n");
+
         free_memory(&header);
+
+        printf("before free\n");
+
 
     }
     free_memory(&header);
     sleep(1);
-    close(sock);
+    //close(sock);
     pthread_exit(NULL);
     }
 
@@ -78,15 +87,15 @@ void *thread_handler(void *socket_desc) {
 
 int main(int argc, char *argv[]) {
     //Get Arguments
-    int port_number = atoi(argv[1]);
-    root_address = argv[2];
-    printf("Port Number:  %d\n", port_number);
-    printf("Root Address: %s\n", root_address);
-
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
         return -1;
     }
+    int port_number = atoi(argv[1]);
+    char *root_address = argv[2];
+    printf("Port Number:  %d\n", port_number);
+    printf("Root Address: %s\n", root_address);
+
 
     if (access(root_address, F_OK) != 0) {
         fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));

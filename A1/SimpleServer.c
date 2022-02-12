@@ -12,16 +12,18 @@ Content-Length: 2345
 <HTML> ...
  */
 int main( int argc, char *argv[] )  {
-    int port_number = atoi(argv[1]);
-    char *root_address = argv[2];
-
-    printf("Port Number:  %d\n", port_number);
-    printf("Root Address: %s\n", root_address);
 
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
         return -1;
     }
+
+    int port_number= atoi(argv[1]);
+    char *root_address = argv[2];
+
+    printf("Port Number:  %d\n", port_number);
+    printf("Root Address: %s\n", root_address);
+
 
     if(access(root_address, F_OK) != 0) {
         fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));

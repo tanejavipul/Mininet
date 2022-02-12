@@ -2,15 +2,16 @@
 
 int main( int argc, char *argv[] )  {
     //Get Arguments
-    int port_number = atoi(argv[1]);
-    char *root_address = argv[2];
-    printf("Port Number:  %d\n", port_number);
-    printf("Root Address: %s\n", root_address);
 
     if (argc != 3) {
         fprintf(stderr, "Invalid Number of Arguments!\n");
         return -1;
     }
+    int port_number = atoi(argv[1]);
+    char *root_address = argv[2];
+    printf("Port Number:  %d\n", port_number);
+    printf("Root Address: %s\n", root_address);
+
 
     if(access(root_address, F_OK) != 0) {
         fprintf(stderr, "http root path invalid with Error Code: %d\n", access(root_address, F_OK));
@@ -72,18 +73,7 @@ int main( int argc, char *argv[] )  {
         char buffer[30000];
 
         while(read(new_socket, buffer, 30000)>0) {
-//            buffer[input_val] = '\0';
 
-
-//            n = read(new_socket, buffer, 30000);
-//            printf("%d readddd\n", n);
-//
-//            if (n<=0){
-//                close(new_socket);
-//                printf("%d breaking\n", n);
-//
-//                break;
-//            }
             get_header_output = get_header(&header, buffer);
             if (get_header_output > 0) {
                 //take out the last / if it exists because we add it in request filename.
@@ -91,29 +81,21 @@ int main( int argc, char *argv[] )  {
                     root_address[strlen(root_address) - 1] = '\0';
                 }
                 handler(new_socket, &header, root_address);
-
             }
             else {
-
                 if (header.http_version == 0) {
                     write(new_socket, RESPONSE_404_0,strlen(RESPONSE_404_0));
                 } else {
                     write(new_socket, RESPONSE_404_1,strlen(RESPONSE_404_1));
                 }
             }
-
             if( contains(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
                 free_memory(&header);
                 close(new_socket);
-
                 break;
             }
-
             free_memory(&header);
-            char buffer[30000];
         }
-
-        //printf("CONNECTION CLOSED\n");
         close(new_socket);
     }
 }
