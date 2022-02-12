@@ -51,6 +51,11 @@ int main( int argc, char *argv[] )  {
         return 1;
     }
     //printf("listening output: %d\n", listening);
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    //set the timeout on client socket
 
     while(1) { //while loop so it can listen to more connections
         printf("--------------REQUESTS--------------\n");
@@ -62,6 +67,7 @@ int main( int argc, char *argv[] )  {
         }
 
         char buffer[30000];
+        setsockopt(new_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *) &timeout, sizeof timeout);
 
         while(read(new_socket, buffer, 30000) > 0) {
 
@@ -87,14 +93,13 @@ int main( int argc, char *argv[] )  {
                 free(error_response);
             }
 
-            if( strcmp(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
+            if( contains(header.connectiontype, TYPE_CLOSE) == 0 ) { //socket only closes when 1. socket times out or 2. client sends Connection: close header inside a header"
                 free_memory(&header);
                 break;
             }
 
             free_memory(&header);
         }
-
         //printf("CONNECTION CLOSED\n");
         close(new_socket);
     }
