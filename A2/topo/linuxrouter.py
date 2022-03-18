@@ -71,10 +71,12 @@ class NetworkTopo( Topo ):
                            defaultRoute='via 192.168.1.1' )
         h2 = self.addHost( 'h2', ip='172.16.0.100/12',
                            defaultRoute='via 172.16.0.1' )
+        h4 = self.addHost( 'h4', ip='172.16.0.50/12',
+                           defaultRoute='via 172.16.0.1' )
         h3 = self.addHost( 'h3', ip='10.0.0.100/8',
                            defaultRoute='via 10.0.0.1' )
 
-        for h, s in [ (h1, s1), (h2, s2), (h3, s3) ]:
+        for h, s in [ (h1, s1), (h2, s2), (h3, s3), (h4, s2)]:
             self.addLink( h, s )
 
 
