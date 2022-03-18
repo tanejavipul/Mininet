@@ -25,15 +25,12 @@ def main():
 
 
 if __name__ == "__main__":
-    s = socket(AF_INET, SOCK_STREAM)
+    s = socket(AF_INET, SOCK_DGRAM)
     s.bind((ROUTER_ADDRESS, ROUTER_PORT))
-    s.listen()
-    conn, addr = s.accept()
-    print(addr)
     while True:
-        data = conn.recv(1024)
-        print(data)
-        conn.send("recieved ".encode())
+        data, add = s.recvfrom(1024)
+        print(add, data)
+        # conn.send("recieved ".encode())
 
 
     # main()

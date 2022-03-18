@@ -2,6 +2,8 @@ import json
 
 BROADCAST_PORT = 4200
 TCP_PORT = 8008
+TYPE_INITIALIZE = "HOST_INITIALIZATION"
+TYPE_ADVERTISE = "ADVERTISE"
 
 
 # Make Packet
@@ -46,6 +48,6 @@ def get_message(packet):
     return json.loads(packet.decode('utf-8'))['message']
 
 
-def make_broadcast_packet(source_ip, source_port, message):
-    output = {"source_ip": source_ip, "source_port": source_port, "message": message}
+def make_broadcast_packet(type, source_ip, source_port, message):
+    output = {"type": str(type), "source_ip": str(source_ip), "source_port": str(source_port), "message": str(message)}
     return json.dumps(output).encode('utf-8')

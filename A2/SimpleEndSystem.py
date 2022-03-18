@@ -8,29 +8,31 @@ from threading import Thread
 
 ROUTER_PORT = 8080
 ROUTER_ADDRESS = "172.16.0.1"
+ROUTER = (ROUTER_ADDRESS, ROUTER_PORT)
 
 
 def setup():
-    if len(sys.argv) < 3:
+    print(sys.argv)
+    if len(sys.argv) < 2:
         host_address = input("Enter End Point IP: ")
     else:
         host_address = sys.argv[1]
     #UDP BROADCAST CONNECT
-    sock = socket(AF_INET, SOCK_DGRAM)
-    sock.bind((host_address, 0))
-    sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    broad = socket(AF_INET, SOCK_DGRAM)
+    broad.bind((host_address, 0))
+    broad.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
     #TCP CONNECT
-    sock_tcp = socket(AF_INET, SOCK_STREAM)
-    sock_tcp.bind((host_address, 0))
-    return sock, sock_tcp
+    sock = socket(AF_INET, SOCK_DGRAM)
+    sock.bind((host_address, 0))
+    return broad, sock
 
 
 def send_broadcast(s):
     src_address = s.getsockname()[0]
     src_port = s.getsockname()[1]
     message = "Hello I am a host"
-    simple_packet = make_broadcast_packet(src_address, src_port, message)
+    simple_packet = make_broadcast_packet(TYPE_INITIALIZE, src_address, src_port, message)
     s.sendto(simple_packet, ("255.255.255.255", ROUTER_PORT))
 
 
@@ -67,15 +69,13 @@ def send_broadcast(s):
 
 
 def main():
-    sock, sock_tcp = setup() #UDP sock, TCP sock
-    send_broadcast(sock)
-
-    sock_tcp.connect((ROUTER_ADDRESS, ROUTER_PORT))
+    broad, sock = setup() #UDP sock, TCP sock
+    send_broadcast(broad)
 
     while True:
 
         # maintains a list of possible input streams
-        sockets_list = [sys.stdin, sock_tcp]
+        sockets_list = [sys.stdin, sock]
 
         """ There are two possible input situations. Either the
         user wants to give manual input to send to other people,
@@ -88,12 +88,12 @@ def main():
         read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
 
         for socks in read_sockets:
-            if socks == sock_tcp:
-                message = socks.recv(2048)
+            if socks == sock:
+                message = socks.recvfrom(2048)
                 print(message)
             else:
                 message = sys.stdin.readline()
-                sock_tcp.send(message.encode())
+                sock.sendto(message.encode(), ROUTER)
                 sys.stdout.write("<You>")
                 sys.stdout.write(message)
                 sys.stdout.flush()
