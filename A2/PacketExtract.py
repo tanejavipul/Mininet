@@ -1,54 +1,52 @@
 import json
 
+BROADCAST_PORT = 420
+
 
 # Make Packet
-def make_packet(dest_ip, dest_port, TTL, source_ip, source_port, message):
-    output = "|" + str(dest_ip)
-    output += "|" + str(dest_port)
-    output += "|" + str(TTL)
-    output += "|" + str(source_ip)
-    output += "|" + str(source_port)
-    output += "|" + str(message)
-    return output + "|"
+def make_packet(dest_ip, dest_port, ttl, source_ip, source_port, message):
+    output = {"dest_ip": str(dest_ip), "dest_port": str(dest_port), "ttl": str(ttl), "source_ip": source_ip,
+              "source_port": source_port, "message": message}
 
-
-def packet_split(packet):
-    return packet.split('|')
-
+    return json.dumps(output).encode('utf-8')
 
 
 def update_ttl(packet):
-    lst = packet_split(packet)
-    ttl = int(lst[3])
+    new_packet = json.loads(packet.decode('utf-8'))
+    print(get_ttl(packet))
+    ttl = int(get_ttl(packet))
     ttl -= 1
-    lst[3] = str(ttl)
-    return "|".join(lst)
-
-
-
+    new_packet['ttl'] = ttl
+    json.dumps(new_packet).encode('utf-8')
+    return new_packet
 
 
 def get_dest_ip(packet):
-    return packet_split(packet)[1]
+    return json.loads(packet.decode('utf-8'))['dest_ip']
 
 
 def get_dest_port(packet):
-    return packet_split(packet)[2]
+    return json.loads(packet.decode('utf-8'))['dest_port']
 
-# Subtract TTL
-def get_TTL(packet):
-    return packet_split(packet)[3]
+
+def get_ttl(packet):
+    return json.loads(packet.decode('utf-8'))['ttl']
 
 
 def get_source_ip(packet):
-    return packet_split(packet)[4]
+    return json.loads(packet.decode('utf-8'))['source_ip']
 
 
 def get_source_port(packet):
-    return packet_split(packet)[5]
+    return json.loads(packet.decode('utf-8'))['source_port']
 
 
 def get_message(packet):
-    return packet_split(packet)[6]
+    return json.loads(packet.decode('utf-8'))['message']
 
 
+def make_broadcast_packet(source_ip, source_port, message):
+    output = {"dest_ip": str(dest_ip), "dest_port": str(dest_port), "ttl": str(ttl), "source_ip": source_ip,
+              "source_port": source_port, "message": message}
+
+    return json.dumps(output).encode('utf-8')

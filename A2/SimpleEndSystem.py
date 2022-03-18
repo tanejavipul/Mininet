@@ -1,48 +1,70 @@
-# import os
-# import sys
-# import time
-# from socket import *
-#
-# PORT = 8091
-#
-#
-#
-# if __name__ == '__main__':
-#     s = socket(AF_INET, SOCK_DGRAM)
-#     s.bind(('', PORT))
-#     s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-#     print(s)
-#     data = "EJEHERR"
-#     s.sendto(data.encode(), ('<broadcast>', 9090))
-#     #
-#     #
-#     # # ADDRESS = input("Enter End System Address: ")
-#     # sock = socket(AF_INET, SOCK_STREAM)
-#     # sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-#     #
-#     # sock.bind(("", PORT))
-#     # sock.connect(("", PORT))
-#     # print(sock.getsockname())
-#     # # sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-#     # print(sock.sendto("hi".encode(), ('0.0.0.0', 9090)))
-#     #
-#     # # connection = socket(AF_INET, SOCK_STREAM)
-#     # #
-#     # # connection.connect((gethostname(), 8090))
-#     # #
-#     # # while True:
-#     # #     message = connection.recv(1024)
-
-MYPORT = 50000
-
-import sys, time
+import os
+import sys
+import time
 from socket import *
+from PacketExtract import *
+from threading import Thread
 
-s = socket(AF_INET, SOCK_DGRAM)
-s.bind(('', 0))
-s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+ROUTER_PORT = 8080
+ROUTER_ADDY = "12123912"
 
-while 1:
-    data = "vvnter End System Address"
-    s.sendto(data.encode(), ('', MYPORT))
-    time.sleep(2)
+
+def setup():
+    host_address = sys.argv[1]
+    if len(sys.argv) < 3:
+        host_address = input("Enter End Point IP: ")
+    sock = socket(AF_INET, SOCK_DGRAM)
+    sock_tcp = socket(AF_INET, SOCK_STREAM)
+    sock_tcp.bind((host_address, 0))
+    sock.bind((host_address, 0))
+    return sock, sock_tcp
+
+
+def send_broadcast(s):
+    s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    src_address = s.getsockname()[0]
+    src_port = s.getsockname()[1]
+    message = "Hello I am a host"
+    # TODO FIX PACKET
+    simple_packet = make_packet("255.255.255.255", ROUTER_PORT, 0, src_address, src_port, message)
+    s.sendto(simple_packet, ("255.255.255.255", ROUTER_PORT)) # not sure if need to .encode packet
+
+
+def thread_send(s):
+    dest_ip = input("Enter destination address: ")
+    ttl = input("Specify the TTL for the message: ")
+    message = input("Enter a message: ")
+
+    src_address = s.getsockname()[0]
+    src_port = s.getsockname()[1]
+    # dest_port should probably be determined by router
+
+    packet = make_packet(dest_ip, -1, ttl, src_address, src_port, message)
+
+    # send message to router
+    s.connect((ROUTER_ADDY, ROUTER_PORT))
+    s.sendall(packet)
+
+
+def thread_receive(sock_tcp):
+    while True:
+        conn, addr = sock_tcp.accept()  # Establish connection with client
+        while True:
+            data = conn.recv(1024)
+            print(f'Message received {data}')
+            if not data:
+                break
+    conn.close()
+    pass
+
+
+def main():
+    sock, sock_tcp = setup() #UDP sock, TCP sock
+    send_broadcast(sock)
+    Thread(target=thread_send(), args=(sock_tcp,)).start() # Create thread for sending messages
+
+    Thread(target=thread_receive(), args=(sock_tcp,)).start()
+
+
+if __name__ == "__main__":
+    main()
