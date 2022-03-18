@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-linuxrouter.py: Example network with Linux IP router
+simplerouter.py: Example network with Linux IP router
 
 This example converts a Node into a router using IP forwarding
 already built into Linux.
