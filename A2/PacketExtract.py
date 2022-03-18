@@ -1,6 +1,7 @@
 import json
 
-BROADCAST_PORT = 420
+BROADCAST_PORT = 4200
+TCP_PORT = 8008
 
 
 # Make Packet
@@ -46,7 +47,5 @@ def get_message(packet):
 
 
 def make_broadcast_packet(source_ip, source_port, message):
-    output = {"dest_ip": str(dest_ip), "dest_port": str(dest_port), "ttl": str(ttl), "source_ip": source_ip,
-              "source_port": source_port, "message": message}
-
+    output = {"source_ip": source_ip, "source_port": source_port, "message": message}
     return json.dumps(output).encode('utf-8')

@@ -1,4 +1,13 @@
-MYPORT = 8080
+import os
+import select
+import sys
+import time
+from socket import *
+from PacketExtract import *
+from threading import Thread
+
+ROUTER_PORT = 8080
+ROUTER_ADDRESS = "172.16.0.1"
 
 
 def eth_thread():
@@ -10,11 +19,24 @@ def broadcast_thread(t):
 
 
 def main():
+
+
     pass
 
 
 if __name__ == "__main__":
-    main()
+    s = socket(AF_INET, SOCK_STREAM)
+    s.bind((ROUTER_ADDRESS, ROUTER_PORT))
+    s.listen()
+    conn, addr = s.accept()
+    print(addr)
+    while True:
+        data = conn.recv(1024)
+        print(data)
+        conn.send("recieved ".encode())
+
+
+    # main()
 
 
 # s = socket(AF_INET, SOCK_DGRAM)
