@@ -5,32 +5,64 @@ import time
 from socket import *
 from PacketExtract import *
 from threading import Thread
-
-ROUTER_PORT = 8080
-ROUTER_ADDRESS = "172.16.0.1"
+from ForwardTable import *
 
 
-def eth_thread():
+forward_table = {}
+
+
+
+def broadcast_setup():
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.bind(('255.255.255.255', BROADCAST_PORT))
+    return s
+
+
+
+def eth_thread(eth, address):
     pass
 
 
-def broadcast_thread(t):
+# For receiving forward table from neighbors to update current router tables
+def broadcast_recv_thread(s: socket):
+    while True:
+        data, add = s.recvfrom(4096)
+        print(add, data)
+
+
+# For sending forward table to neighbors
+def broadcast_send_thread(s: socket):
+    while True:
+        adv = advertise()
+        s.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
     pass
 
 
 def main():
+    broad = broadcast_setup()
 
 
     pass
 
 
+
+
 if __name__ == "__main__":
-    s = socket(AF_INET, SOCK_DGRAM)
-    s.bind((ROUTER_ADDRESS, ROUTER_PORT))
-    while True:
-        data, add = s.recvfrom(1024)
-        print(add, data)
-        # conn.send("recieved ".encode())
+    main()
+
+
+
+
+
+
+
+
+    # s = socket(AF_INET, SOCK_DGRAM)
+    # s.bind((ROUTER_ADDRESS, ROUTER_PORT))
+    # while True:
+    #     data, add = s.recvfrom(1024)
+    #     print(add, data)
+    #     # conn.send("recieved ".encode())
 
 
     # main()

@@ -6,25 +6,33 @@ from socket import *
 from PacketExtract import *
 from threading import Thread
 
-ROUTER_PORT = 8080
-ROUTER_ADDRESS = "172.16.0.1"
-ROUTER = (ROUTER_ADDRESS, ROUTER_PORT)
+
+ROUTER_ADDRESS = ""
+ROUTER = (ROUTER_ADDRESS, PACKET_PORT)
 
 
 def setup():
+    global ROUTER_ADDRESS
+    global ROUTER
     print(sys.argv)
     if len(sys.argv) < 2:
         host_address = input("Enter End Point IP: ")
     else:
         host_address = sys.argv[1]
+
+    ROUTER_ADDRESS = host_address[:host_address.rfind('.')+1] + "1"
+    ROUTER = (ROUTER_ADDRESS, PACKET_PORT)
+    print("Host IP: " + str(host_address))
+    print("Router IP: " + str(ROUTER_ADDRESS))
+
     #UDP BROADCAST CONNECT
     broad = socket(AF_INET, SOCK_DGRAM)
     broad.bind((host_address, 0))
     broad.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
-    #TCP CONNECT
+    #PACKET CONNECT
     sock = socket(AF_INET, SOCK_DGRAM)
-    sock.bind((host_address, 0))
+    sock.bind((host_address, PACKET_PORT))
     return broad, sock
 
 
@@ -33,42 +41,11 @@ def send_broadcast(s):
     src_port = s.getsockname()[1]
     message = "Hello I am a host"
     simple_packet = make_broadcast_packet(TYPE_INITIALIZE, src_address, src_port, message)
-    s.sendto(simple_packet, ("255.255.255.255", ROUTER_PORT))
-
-
-# def thread_send(s):
-#     dest_ip = input("Enter destination address: ")
-#     ttl = input("Specify the TTL for the message: ")
-#     message = input("Enter a message: ")
-#
-#     src_address = s.getsockname()[0]
-#     src_port = s.getsockname()[1]
-#     # dest_port should probably be determined by router
-#
-#     packet = make_packet(dest_ip, -1, ttl, src_address, src_port, message)
-#
-#     # send message to router
-#     s.connect((ROUTER_ADDY, ROUTER_PORT))
-#     s.sendall(packet)
-#
-#
-# def thread_receive(sock_tcp):
-#     while True:
-#         conn, addr = sock_tcp.accept()  # Establish connection with client
-#         while True:
-#             data = conn.recv(1024)
-#             print(f'Message received {data}')
-#             if not data:
-#                 break
-#     conn.close()
-#     pass
-#     Thread(target=thread_send(), args=(sock_tcp,)).start() # Create thread for sending messages
-#
-#     Thread(target=thread_receive(), args=(sock_tcp,)).start()
-
+    s.sendto(simple_packet, ("255.255.255.255", BROADCAST_PORT))
 
 
 def main():
+    global ROUTER
     broad, sock = setup() #UDP sock, TCP sock
     send_broadcast(broad)
 
@@ -89,13 +66,11 @@ def main():
 
         for socks in read_sockets:
             if socks == sock:
-                message = socks.recvfrom(2048)
+                message = socks.recvfrom(4096)
                 print(message)
             else:
                 message = sys.stdin.readline()
                 sock.sendto(message.encode(), ROUTER)
-                sys.stdout.write("<You>")
-                sys.stdout.write(message)
                 sys.stdout.flush()
 
 
