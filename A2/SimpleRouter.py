@@ -3,7 +3,7 @@ import select
 import sys
 import time
 from socket import *
-from PacketExtract import *
+from Packets import *
 from threading import Thread
 from ForwardTable import *
 import netifaces as ni
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     broad = broadcast_setup()
     print("STARTING BROADCAST THREADS")
     Thread(target=broadcast_recv_thread, args=(broad, )).start()
-    Thread(target=broadcast_send_thread, args=(broad,)).start()
-    print("COMPLETED BROADCAST THREADS")
+    Thread(target=broadcast_send_thread, args=(broad, )).start()
+    print("COMPLETED BROADCAST THREADS\n")
 
 
     print("STARTING ETH THREADS")
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             ROUTER_ADDRESS = ip
             thr = Thread(target=eth_thread, args=(inter, ip,)).start()
             all_thread.append(thr)
-    print("COMPLETED ETH THREADS")
+    print("COMPLETED ETH THREADS\n")
 
 
     if eth0: #set address to eth0 if exist
