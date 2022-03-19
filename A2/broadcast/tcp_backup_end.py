@@ -24,6 +24,7 @@ def setup():
     ROUTER = (ROUTER_ADDRESS, PACKET_PORT)
     print("Host IP: " + str(host_address))
     print("Router IP: " + str(ROUTER_ADDRESS))
+    print("ROUTER: " + str(ROUTER))
 
     #UDP BROADCAST CONNECT
     broad = socket(AF_INET, SOCK_DGRAM)
@@ -31,8 +32,10 @@ def setup():
     broad.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
     #PACKET CONNECT
-    sock = socket(AF_INET, SOCK_DGRAM)
+    sock = socket(AF_INET, SOCK_STREAM)
+    sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     sock.bind((host_address, PACKET_PORT))
+    sock.listen()
     return broad, sock
 
 
@@ -49,11 +52,10 @@ def main():
     broad, sock = setup() #UDP sock, TCP sock
     send_broadcast(broad)
 
+    # maintains a list of possible input streams
+    sockets_list = [sys.stdin, sock]
+
     while True:
-
-        # maintains a list of possible input streams
-        sockets_list = [sys.stdin, sock]
-
         """ There are two possible input situations. Either the
         user wants to give manual input to send to other people,
         or the server is sending a message to be printed on the
@@ -65,15 +67,38 @@ def main():
         read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
 
         for socks in read_sockets:
-            if socks == sock:
-                message = socks.recvfrom(4096)
-                print(message)
+            if socks == sock and 1 == 0:
+                print("inside")
+                # conn, addr = sock.accept()
+                # message = conn.recv(4096)
+                # data = ""
+                # while message:
+                #     data += message
+                #     message = conn.recv(4096)
+                # print(addr, message)
+
             else:
                 message = sys.stdin.readline()
-                sock.sendto(message.encode(), ROUTER)
-                sys.stdout.flush()
+                if message:
+                    print(sock)
+                    sock.sendall(message.encode())
+                message = ""
+                # sys.stdout.flush()
 
 
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+#ROUTER TEST CODE
+# if __name__ == "__main__":
+#     s = socket(AF_INET, SOCK_STREAM)
+#     s.bind(("172.16.0.1", 8008))
+#     s.listen(5)
+#     while True:
+#         conn, addr = s.accept()
+#         print(conn.recv(4096))

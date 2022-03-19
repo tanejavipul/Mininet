@@ -7,8 +7,11 @@ TYPE_ADVERTISE = "ADVERTISE"
 
 
 # GENERAL FUNCTIONS
-def convert(packet: dict):
+def convert_to_json(packet: dict):
     return json.dumps(packet).encode('utf-8')
+
+def convert_to_dict(packet: bytes):
+    return json.loads(packet.decode('utf-8'))
 
 
 def copy_dict(d: dict):
