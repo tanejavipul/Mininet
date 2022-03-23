@@ -1,0 +1,117 @@
+Index: A2/SimpleRouter.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/A2/SimpleRouter.py b/A2/SimpleRouter.py
+--- a/A2/SimpleRouter.py	(revision 756ce8e5a3e85cbeea59c0a34c8b0f5c6024f974)
++++ b/A2/SimpleRouter.py	(date 1647996411784)
+@@ -27,39 +27,43 @@
+ # deconstruct packet and send ?
+ def eth_thread(eth, address):
+     print(str(eth) + " Thread Started with IP: " + address)
+-    s = socket(AF_INET, SOCK_DGRAM)
++    s = socket(AF_INET, SOCK_STREAM)
+     s.bind((address, PACKET_PORT))
++    s.listen(5)
++
+     while(True):
+-        packet_data, add = s.recvfrom(4096)
++        conn, add = s.accept()
++        packet_data = conn.recv(4096)
++        print("ADDRESSS: " + str(add))
+         print(eth + str(packet_data))
+         print(packet_data)
+ 
+-        #Decode packet?
+-        data = convert_to_dict(packet_data)
+-        print(data)
+-
+-        #RECIEVED packet info
+-        dest_ip = data.get('dest_ip')
+-        dest_port = int(data.get('dest_port'))
+-        ttl = int(data.get('ttl'))
+-        source_ip = data.get('source_ip')
+-        source_port = int(data.get('source_port'))
+-        message = data.get('message')
+-
+-        #validate dest_ip is in router forwarding table
+-        is_dest_valid = False
+-        for lst in forward_table.values(): #loop through each list of forward_table
+-            if dest_ip in lst:
+-                is_dest_valid = True
+-
+-        if is_dest_valid: #send packet to dest
+-            destination_packet = make_packet(dest_ip, dest_port, ttl,  source_ip, source_port, message)
+-            s.sendto(destination_packet, (dest_ip, dest_port))
+-        else: #send packet back to sender
+-            error_message = 'FAILED_TO_SEND: ' + message
+-            resend_packet = make_packet(source_ip, source_port, ttl, ROUTER_ADDRESS, 8008, error_message)
+-            s.sendto(resend_packet, (source_ip, source_port))
+-
++        # #Decode packet?
++        # data = convert_to_dict(packet_data)
++        # print(data)
++        #
++        # #RECIEVED packet info
++        # dest_ip = data.get('dest_ip')
++        # dest_port = int(data.get('dest_port'))
++        # ttl = int(data.get('ttl'))
++        # source_ip = data.get('source_ip')
++        # source_port = int(data.get('source_port'))
++        # message = data.get('message')
++        #
++        # #validate dest_ip is in router forwarding table
++        # is_dest_valid = False
++        # for lst in forward_table.values(): #loop through each list of forward_table
++        #     if dest_ip in lst:
++        #         is_dest_valid = True
++        #
++        # if is_dest_valid: #send packet to dest
++        #     destination_packet = make_packet(dest_ip, dest_port, ttl,  source_ip, source_port, message)
++        #     s.sendto(destination_packet, (dest_ip, dest_port))
++        # else: #send packet back to sender
++        #     error_message = 'FAILED_TO_SEND: ' + message
++        #     resend_packet = make_packet(source_ip, source_port, ttl, ROUTER_ADDRESS, 8008, error_message)
++        #     s.sendto(resend_packet, (source_ip, source_port))
++        #
+ 
+ 
+ 
+Index: A2/SimpleEndSystem.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/A2/SimpleEndSystem.py b/A2/SimpleEndSystem.py
+--- a/A2/SimpleEndSystem.py	(revision 756ce8e5a3e85cbeea59c0a34c8b0f5c6024f974)
++++ b/A2/SimpleEndSystem.py	(date 1647995869976)
+@@ -34,8 +34,10 @@
+     broad.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+ 
+     #PACKET CONNECT
+-    sock = socket(AF_INET, SOCK_DGRAM)
+-    sock.bind((host_address, PACKET_PORT))
++    sock = socket(AF_INET, SOCK_STREAM)
++    print(sock)
++    sock.connect(ROUTER)
++    print(sock)
+     return broad, sock
+ 
+ 
+@@ -94,14 +96,7 @@
+                     # if there is some error should be indexing error so we throw some type of misinput?
+                     break
+ 
+-                # not sure if valid way to check IP can also put above and just raise general exception
+-                try:
+-                    inet_aton(ip)
+-                    # I have no idea if these args are right lol
+-                    packet = make_packet(ip, PACKET_PORT, ttl, HOST_ADDRESS, PACKET_PORT, full_message)
+-                except Exception:
+-                    # Not legal IP
+-                    break
++                packet = make_packet(ip, PACKET_PORT, ttl, HOST_ADDRESS, PACKET_PORT, full_message)
+ 
+                 sock.sendto(packet, ROUTER)
+                 sys.stdout.flush()
