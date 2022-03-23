@@ -28,7 +28,7 @@ def broadcast_setup():
 def eth_thread(eth, address):
     print(str(eth) + " Thread Started with IP: " + address)
     s = socket(AF_INET, SOCK_DGRAM)
-    s.bind((address, PACKET_PORT))
+    s.bind((address, ROUTER_PORT))
     while(True):
         packet_data, add = s.recvfrom(4096)
         print(eth + str(packet_data))
@@ -36,7 +36,6 @@ def eth_thread(eth, address):
 
         #Decode packet?
         data = convert_to_dict(packet_data)
-        print(data)
 
         #RECIEVED packet info
         dest_ip = data.get('dest_ip')

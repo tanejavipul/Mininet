@@ -5,10 +5,11 @@ import time
 from socket import *
 from Packets import *
 from threading import Thread
+import netifaces as ni
 
 HOST_ADDRESS = ""
 ROUTER_ADDRESS = ""
-ROUTER = (ROUTER_ADDRESS, PACKET_PORT)
+ROUTER = (ROUTER_ADDRESS, ROUTER_PORT)
 
 
 def setup():
@@ -21,50 +22,49 @@ def setup():
     else:
         host_address = sys.argv[1]
 
-        HOST_ADDRESS = host_address
+    HOST_ADDRESS = host_address
+    ROUTER_ADDRESS = ni.gateways()['default'][ni.AF_INET][0]
+    ROUTER = (ROUTER_ADDRESS, ROUTER_PORT)
 
-    ROUTER_ADDRESS = host_address[:host_address.rfind('.')+1] + "1"
-    ROUTER = (ROUTER_ADDRESS, PACKET_PORT)
-    print("Host IP: " + str(host_address))
-    print("Router IP: " + str(ROUTER_ADDRESS))
+    # UDP BROADCAST CONNECT
+    keep_alive = socket(AF_INET, SOCK_DGRAM)
+    keep_alive.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
-    #UDP BROADCAST CONNECT
-    broad = socket(AF_INET, SOCK_DGRAM)
-    broad.bind((host_address, 0))
-    broad.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-
-    #PACKET CONNECT
+    # PACKET CONNECT
     sock = socket(AF_INET, SOCK_DGRAM)
-    sock.bind((host_address, PACKET_PORT))
-    return broad, sock
+    sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+
+    return sock, keep_alive
 
 
 def send_broadcast(s):
-    src_address = s.getsockname()[0]
-    src_port = s.getsockname()[1]
     message = "Hello I am a host"
-    simple_packet = make_broadcast_packet(TYPE_INITIALIZE, src_address, src_port, 0, message)
+    simple_packet = make_broadcast_packet(TYPE_INITIALIZE, HOST_ADDRESS, 0, message, ROUTER_ADDRESS)
     s.sendto(simple_packet, ("255.255.255.255", BROADCAST_PORT))
 
+def keep_alive_thread(s: socket):
+    print("Keep Alive Thread Started")
+    while True:
+        time.sleep(3)
+        send_keep_alive(s)
+
+def send_keep_alive(s):
+    message = "KEEP_ALIVE"
+    simple_packet = make_broadcast_packet(TYPE_KEEP_ALIVE, HOST_ADDRESS, 0, message, ROUTER_ADDRESS)
+    s.sendto(simple_packet, ("255.255.255.255", BROADCAST_PORT))
 
 def main():
     global ROUTER
-    broad, sock = setup() #UDP sock, TCP sock
-    send_broadcast(broad)
+    sock, keep_alive = setup()  # UDP sock, TCP sock
+    Thread(target=keep_alive_thread, args=(keep_alive,)).start()
+    print("Host IP: " + str(HOST_ADDRESS))
+    print("Router IP: " + str(ROUTER_ADDRESS))
+
+    send_broadcast(sock)
 
     while True:
-
-        # maintains a list of possible input streams
         sockets_list = [sys.stdin, sock]
 
-        """ There are two possible input situations. Either the
-        user wants to give manual input to send to other people,
-        or the server is sending a message to be printed on the
-        screen. Select returns from sockets_list, the stream that
-        is reader for input. So for example, if the server wants
-        to send a message, then the if condition will hold true
-        below.If the user wants to send a message, the else
-        condition will evaluate as true"""
         read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
 
         for socks in read_sockets:
@@ -72,47 +72,32 @@ def main():
                 message = socks.recvfrom(4096)
                 print(message)
             else:
-                # Original
-                # message = sys.stdin.readline()
-                # sock.sendto(message.encode(), ROUTER)
-                # sys.stdout.flush()
-
-                # Eric's
                 message = sys.stdin.readline()
 
-                try:
-                    message = message.split(" ")
-                    ip = message[0]
-                    print('ip argument : ' + ip + '\n')
-                    ttl = message[1]
-                    print('ttl argument: ' + ttl + '\n')
-                    message_as_lst = message[2:]
-                    print('message_as_lst: ' + str(message_as_lst) + '\n')
-                    full_message = ' '.join(message_as_lst)
-                    print('full_message: ' + full_message + '\n')
-                except IndexError:
-                    # if there is some error should be indexing error so we throw some type of misinput?
-                    break
-
-                # not sure if valid way to check IP can also put above and just raise general exception
-                try:
-                    inet_aton(ip)
-                    # I have no idea if these args are right lol
-                    packet = make_packet(ip, PACKET_PORT, ttl, HOST_ADDRESS, PACKET_PORT, full_message)
-                except Exception:
-                    # Not legal IP
-                    break
-
-                sock.sendto(packet, ROUTER)
+                message = message.split(" ")
+                packet = extract(message)
+                if packet is not None:
+                    sock.sendto(packet, ROUTER)
                 sys.stdout.flush()
 
-#
-# def get_host_message(message):
-#     pass
 
+def extract(message):
+    if len(message) < 3:
+        print("Please input in format [IP] [TTL] [MESSAGE]")
+        return None
+    else:
+        if message[2] == "OSPF":
+            pass
+        ip = message[0]
+        print('ip argument : ' + ip)
+        ttl = message[1]
+        print('ttl argument: ' + ttl)
+        message_as_lst = message[2:]
+        print('message_as_lst: ' + str(message_as_lst))
+        full_message = ' '.join(message_as_lst)
+        print('full_message: |' + full_message + "|")
+        return make_packet(ip, ROUTER_PORT, int(ttl), HOST_ADDRESS, ROUTER_PORT, full_message)
 
 
 if __name__ == "__main__":
     main()
-
-
