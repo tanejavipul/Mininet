@@ -12,14 +12,23 @@ TYPE = "TYPE"
 ADDRESS = "ADDRESS"
 MESSAGE = "MESSAGE"
 ROUTER_INTERFACE = "ROUTER_INTERFACE"
-TTL = "TTL"
+
 PORT = "PORT"
 KEEP_ALIVE = "KEEP_ALIVE"
+
+PROTOCOL = "PROTOCOL"
 PROTOCOL_RIP = "PROTOCOL_RIP"
 PROTOCOL_OSPF = "PROTOCOL_OSPF"
-PROTOCOL = "PROTOCOL"
+OSPF = "OSPF"
+RIP = "RIP"
+
 DEST_IP = "DEST_IP"
 SOURCE_IP = "SOURCE_IP"
+TTL = "TTL"
+
+# KEEP ALIVE TIMING
+ROUTER_NOT_ALIVE = 7.5
+HOST_NOT_ALIVE = 6.5
 
 
 # GENERAL FUNCTIONS
@@ -38,7 +47,7 @@ def copy_dict(d: dict):
 # Make Packet
 def make_packet(dest_ip, source_ip, ttl, protocol, message):
     output = {DEST_IP: str(dest_ip), SOURCE_IP: str(source_ip), TTL: str(ttl), PROTOCOL: str(protocol),
-              "message": message}
+              MESSAGE: message}
     return json.dumps(output).encode('utf-8')
 
 
@@ -74,3 +83,7 @@ def make_broadcast_packet(type, address, ttl, message, router_interface):
     output = {TYPE: str(type), ADDRESS: str(address), MESSAGE: str(message), TTL: ttl,
               ROUTER_INTERFACE: str(router_interface)}
     return json.dumps(output).encode('utf-8')
+
+
+def get(data, key):
+    return data[key]
