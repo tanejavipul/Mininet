@@ -19,7 +19,7 @@ def print_forwarding_table():
 # broadcast a message to neighbouring routers with the destinations that you can reach and the distance within which
 # you can reach them
 def advertise():
-    pass
+    return "hello i advertised"
 
 
 # take in an advertisement from a neighbouring router and update your routing table accordingly

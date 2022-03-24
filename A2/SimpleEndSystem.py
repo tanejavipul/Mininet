@@ -83,7 +83,7 @@ def main():
     sock, keep_alive = setup()  # UDP sock, TCP sock
     # Thread(target=keep_alive_thread, args=(keep_alive,)).start() #TODO UNCOMMENT WHEN KEEP-ALIVE WORKING
     print("Host IP: " + str(HOST_ADDRESS))
-    print("Router IP: " + str(ROUTER_ADDRESS))
+    print("Router IP: " + str(ROUTER_ADDRESS) + "\n")
 
     send_broadcast(sock)
 
@@ -100,8 +100,10 @@ def main():
             if socks == sock:
                 message, add = socks.recvfrom(4096)
                 decoded_message = convert_to_dict(message)
-                print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE])
-                # print(message)
+                # FIXME NOT SURE IF NEEDED
+                # update_TTL(decoded_message)
+                info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY])
+                print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
             else:
                 message = sys.stdin.readline()
 

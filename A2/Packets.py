@@ -1,6 +1,6 @@
 import json
 
-BROADCAST_PORT = 420
+BROADCAST_PORT = 8008
 ROUTER_PORT = 58008
 TYPE_INITIALIZE = "HOST_INITIALIZATION"
 TYPE_ADVERTISE = "ADVERTISE"
@@ -25,6 +25,7 @@ RIP = "RIP"
 DEST_IP = "DEST_IP"
 SOURCE_IP = "SOURCE_IP"
 TTL = "TTL"
+DELAY = "DELAY"
 
 # KEEP ALIVE TIMING
 ROUTER_NOT_ALIVE = 7.5
@@ -45,37 +46,10 @@ def copy_dict(d: dict):
 
 
 # Make Packet
-def make_packet(dest_ip, source_ip, ttl, protocol, message):
+def make_packet(dest_ip, source_ip, ttl, protocol, message, delay=0):
     output = {DEST_IP: str(dest_ip), SOURCE_IP: str(source_ip), TTL: str(ttl), PROTOCOL: str(protocol),
-              MESSAGE: message}
+              MESSAGE: message, DELAY: delay}
     return json.dumps(output).encode('utf-8')
-
-
-def update_TTL(packet):
-    new_packet = json.loads(packet.decode('utf-8'))
-    ttl = int(get_TTL(packet)) - 1
-    new_packet['ttl'] = ttl
-    return json.dumps(new_packet).encode('utf-8')
-
-
-def get_DEST_IP(packet):
-    return json.loads(packet.decode('utf-8'))[DEST_IP]
-
-
-def get_TTL(packet):
-    return json.loads(packet.decode('utf-8'))[TTL]
-
-
-def get_SOURCE_IP(packet):
-    return json.loads(packet.decode('utf-8'))[SOURCE_IP]
-
-
-def get_MESSAGE(packet):
-    return json.loads(packet.decode('utf-8'))[MESSAGE]
-
-
-def get_PROTOCOL(packet):
-    return json.loads(packet.decode('utf-8'))[PROTOCOL]
 
 
 # BROADCAST FUNCTIONS
@@ -85,5 +59,14 @@ def make_broadcast_packet(type, address, ttl, message, router_interface):
     return json.dumps(output).encode('utf-8')
 
 
-def get(data, key):
-    return data[key]
+
+# Although this returns a new dictionary this return is not need as parameter dictionary is updated
+def update_TTL(packet):
+    packet[TTL] = int(packet[TTL]) - 1
+    return packet
+
+
+# Although this returns a new dictionary this return is not need as parameter dictionary is updated
+def update_DELAY(packet, delay):
+    packet[DELAY] = int(packet[DELAY]) + int(delay)
+    return packet
