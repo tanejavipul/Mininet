@@ -53,6 +53,9 @@ class Graph:
     # this function returns the next node to go to for the shortest path
     def shortest_path_next(self, start, finish):
         return self.shortest_path(start, finish)[0]
+
+    def remove_vertex(self, key):
+        self.vertices.pop(key)
         
     def __str__(self):
         return str(self.vertices)
@@ -66,6 +69,6 @@ class Graph:
 #     g.add_vertex('E', {'H': 1})
 #     g.add_vertex('F', {'B': 2, 'C': 6, 'D': 8, 'G': 9, 'H': 3})
 #     g.add_vertex('G', {'C': 4, 'F': 9})
-#     g.add_vertex('H', {'E': 1, 'F': 3})
+#     g.add_vertex('H', {'E': 1, 'F': 3})Z
 #     print(g.shortest_path('A', 'H'))
 #     print(g.shortest_path_next('A', 'H'))

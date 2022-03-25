@@ -25,16 +25,11 @@ def broadcast_setup():
     s_recv.bind(('255.255.255.255', BROADCAST_PORT))
 
     s_send = socket(AF_INET, SOCK_DGRAM)
-    s_send.bind((ETH[0],BROADCAST_PORT))
+    s_send.bind((ETH[0], BROADCAST_PORT))
     s_send.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     return s_recv, s_send
 
 
-# FIXME FOR MULTI
-# TODO HERE FOR SIMPLE
-# TODO NEXT TIME UPDATE TTL and send as json ENCODE
-# PORT is always 8008
-# deconstruct packet and send ?
 def eth_thread(eth, address):
     global forward_table
     print(str(eth) + " Thread Started with IP: " + address)
@@ -57,7 +52,6 @@ def eth_thread(eth, address):
         if add[0] not in ETH:
             update_TTL(data)
             update_DELAY(data, DELAY)
-
 
         # Scenarios
         # SCENARIO 1: INTERNAL COMMUNICATION
@@ -95,22 +89,36 @@ def broadcast_recv_thread(s: socket):
     global forward_table
     global NAT
     while True:
+        valid = False
         data, address = s.recvfrom(4096)
         print("BROADCAST: " + str((address, data)))
-        data_dict = convert_to_dict(data)
-        if data_dict[TYPE] == TYPE_INITIALIZE:
-            forward_table[data_dict.get(ROUTER_INTERFACE)][HOSTS].append(data_dict[ADDRESS])
-            NAT[data_dict[ADDRESS]] = {}
-            NAT[data_dict[ADDRESS]][ADDRESS] = address[0]
-            NAT[data_dict[ADDRESS]][PORT] = address[1]
-            NAT[data_dict[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
-            print("NAT: " + str(NAT))
-            print("FORWARD: " + str(forward_table))
-        if data_dict[TYPE] == TYPE_KEEP_ALIVE:
-            NAT[ADDRESS][KEEP_ALIVE] = dt.datetime.now()
-            # TODO
-        if data_dict[TYPE] == TYPE_ADVERTISE:
-            update(forward_table, data_dict)
+
+        try:
+            if address[0] in ETH:
+                valid = False
+            else:
+                data = convert_to_dict(data)
+                valid = True
+        except:
+            pass
+
+        if valid:
+            if data[TYPE] == TYPE_INITIALIZE:
+                forward_table[data.get(ROUTER_INTERFACE)][HOSTS].append(data[ADDRESS])
+                NAT[data[ADDRESS]] = {}
+                NAT[data[ADDRESS]][ADDRESS] = address[0]
+                NAT[data[ADDRESS]][PORT] = address[1]
+                NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
+                print("NAT: " + str(NAT))
+                print("FORWARD: " + str(forward_table))
+            if data[TYPE] == TYPE_KEEP_ALIVE:
+                NAT[ADDRESS][KEEP_ALIVE] = dt.datetime.now()
+            if data[TYPE] == TYPE_ADVERTISE:
+                # TODO update neighbors timing and fix update
+                update(forward_table, data)
+
+                # if neighbors updated then
+
 
 
 # For sending forward table to neighbors
@@ -118,8 +126,8 @@ def broadcast_recv_thread(s: socket):
 def broadcast_send_thread(s: socket):
     print("Broadcast Sending Thread Started")
     while True:
-        time.sleep(2.5)
-        adv = advertise()
+        time.sleep(2)
+        adv = advertise(None, None)
         print("SENDING TESTING")
         print(s)
 
@@ -128,7 +136,7 @@ def broadcast_send_thread(s: socket):
     # TODO CHECK FOR DEAD HOST HERE
     # for key in NAT:
     #     now = dt.datetime.now()
-    #     temp = now - key[KEEP_ALIVE]
+    #     temp = now - NAT[key][KEEP_ALIVE]
     #     if temp.total_seconds() > HOST_NOT_ALIVE:
     #         print("REMOVING INACTIVE HOST: " + str(key))
     #         for eth in ETH:
@@ -153,11 +161,6 @@ if __name__ == "__main__":
         except:
             print("Please provide a number for delay")
             print("Delay: 1")
-    # recv, send = broadcast_setup()
-    print("STARTING BROADCAST THREADS")
-    # Thread(target=broadcast_recv_thread, args=(recv,)).start()
-    # Thread(target=broadcast_send_thread, args=(send,)).start()
-    print("COMPLETED BROADCAST THREADS\n")
 
     print("STARTING ETH THREADS")
     interfaces = ni.interfaces()
@@ -174,35 +177,17 @@ if __name__ == "__main__":
             ETH.append(ip)
             all_thread.append(thr)
 
+    if len(ETH) == 0:
+        raise Exception("ERROR: NO THREAD WERE MADE")
+
     time.sleep(0.5)
     print("COMPLETED ETH THREADS\n")
 
-    if len(ETH) == 0:
-        raise Exception("NO THREAD WERE MADE")
+    s_recv, s_send = broadcast_setup()
+    print("STARTING BROADCAST THREADS")
+    Thread(target=broadcast_recv_thread, args=(s_recv,)).start()
+    Thread(target=broadcast_send_thread, args=(s_send,)).start()
+    print("COMPLETED BROADCAST THREADS\n")
 
     print("ROUTER HAS STARTED!")
-    recv, send = broadcast_setup()
-    Thread(target=broadcast_send_thread, args=(send,)).start()
-
-    # s = socket(AF_INET, SOCK_DGRAM)
-    # s.bind((ROUTER_ADDRESS, ROUTER_PORT))
-    # while True:
-    #     data, add = s.recvfrom(1024)
-    #     print(add, data)
-    #     # conn.send("recieved ".encode())
-
-    # main()
-
-# s = socket(AF_INET, SOCK_DGRAM)
-# # s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-#
-# #192.168.84.129
-# # s.bind(('10.0.1.1', MYPORT))
-# s.bind(('255.255.255.255', MYPORT))
-#
-# # s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-# print(s)
-# while 1:
-#     print("####### Server is listening #######")
-#     data = s.recvfrom(1500)
-#     print(data)
+    print(ETH)
