@@ -24,7 +24,7 @@ def broadcast_setup():
     s_recv.bind(('255.255.255.255', BROADCAST_PORT))
 
     s_send = socket(AF_INET, SOCK_DGRAM)
-    s_send.bind((ETH[0], BROADCAST_PORT))
+    s_send.bind((ETH[0], BROADCAST_PORT)) #FIXME need to have multple broadcasting threads, one for each interface
     s_send.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     return s_recv, s_send
 
