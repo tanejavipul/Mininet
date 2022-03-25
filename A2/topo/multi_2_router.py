@@ -1,5 +1,3 @@
-# SOURCE: DISCORD USER -> IOTA
-
 # !/usr/bin/python
 from mininet.topo import Topo
 from mininet.net import Mininet
@@ -21,8 +19,8 @@ class LinuxRouter(Node):
 class NetworkTopo(Topo):
     def build(self, **_opts):
         # Add 2 routers in two different subnets
-        r1 = self.addHost('r1', cls=LinuxRouter, ip='10.0.0.1/24')
-        r2 = self.addHost('r2', cls=LinuxRouter, ip='10.1.0.1/24')
+        r1 = self.addNode('r1', cls=LinuxRouter, ip='10.0.0.1/24')
+        r2 = self.addNode('r2', cls=LinuxRouter, ip='10.1.0.1/24')
 
         # Add 2 switches
         s1 = self.addSwitch('s1')

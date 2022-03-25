@@ -18,7 +18,6 @@ NAT = {}
 forward_table = {}
 NEIGHBORS = {}
 
-
 def broadcast_setup():
     s_recv = socket(AF_INET, SOCK_DGRAM)
     s_recv.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
@@ -91,17 +90,18 @@ def broadcast_recv_thread(s: socket):
     while True:
         valid = False
         data, address = s.recvfrom(4096)
-        print("BROADCAST: " + str((address, data)))
+        print("BROADCAST INCO: " + str((address, data)))
 
         try:
-            if address[0] in ETH:
+            if address[0] in ETH: # TO ignore self broadcasts reads
+                print("void")
                 valid = False
             else:
                 data = convert_to_dict(data)
                 valid = True
         except:
-            pass
-
+            valid = False
+        print(valid)
         if valid:
             if data[TYPE] == TYPE_INITIALIZE:
                 forward_table[data.get(ROUTER_INTERFACE)][HOSTS].append(data[ADDRESS])
@@ -112,13 +112,15 @@ def broadcast_recv_thread(s: socket):
                 print("NAT: " + str(NAT))
                 print("FORWARD: " + str(forward_table))
             if data[TYPE] == TYPE_KEEP_ALIVE:
-                NAT[ADDRESS][KEEP_ALIVE] = dt.datetime.now()
+                print("NAT: " + str(NAT))
+                NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
             if data[TYPE] == TYPE_ADVERTISE:
-                # TODO update neighbors timing and fix update
+                print("UPDATING")
+                # TODO update neighbors timing and fix update,if neighbors updated then send update out
                 update(forward_table, data)
-
-                # if neighbors updated then
-
+                #todo update keep alive with neighbors
+                #todo populate neigthbors
+                print("NEWWW table: "+ str(forward_table))
 
 
 # For sending forward table to neighbors
@@ -127,23 +129,21 @@ def broadcast_send_thread(s: socket):
     print("Broadcast Sending Thread Started")
     while True:
         time.sleep(2)
-        adv = advertise(None, None)
-        print("SENDING TESTING")
-        print(s)
-
-        s.sendto(adv.encode(), ("255.255.255.255", BROADCAST_PORT))
+        adv = advertise(forward_table, ROUTER_ADDRESS)
+        adv = convert_to_json(adv)
+        s.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
 
     # TODO CHECK FOR DEAD HOST HERE
-    # for key in NAT:
-    #     now = dt.datetime.now()
-    #     temp = now - NAT[key][KEEP_ALIVE]
-    #     if temp.total_seconds() > HOST_NOT_ALIVE:
-    #         print("REMOVING INACTIVE HOST: " + str(key))
-    #         for eth in ETH:
-    #             if key in forward_table[eth][HOSTS]:
-    #                 forward_table[eth][HOSTS].remove(key)
-    #                 break
-    #         NAT.pop(key)
+        for key in NAT:
+            now = dt.datetime.now()
+            temp = now - NAT[key][KEEP_ALIVE]
+            if temp.total_seconds() > HOST_NOT_ALIVE:
+                print("REMOVING INACTIVE HOST: " + str(key))
+                for eth in ETH:
+                    if key in forward_table[eth][HOSTS]:
+                        forward_table[eth][HOSTS].remove(key)
+                        break
+                NAT.pop(key)
 
 
 def main():
@@ -169,9 +169,12 @@ if __name__ == "__main__":
     for inter in interfaces:
         ip_dict = ni.ifaddresses(inter)[2][0]
         ip = ip_dict.get('addr', "")
-        if ip:
+
+        if "eth0" in inter or "eth1" in inter:
             # Just populate it with any IP ADDRESS
             ROUTER_ADDRESS = ip
+
+        if ip:
             thr = Thread(target=eth_thread, args=(inter, ip,))
             thr.start()
             ETH.append(ip)
@@ -179,6 +182,8 @@ if __name__ == "__main__":
 
     if len(ETH) == 0:
         raise Exception("ERROR: NO THREAD WERE MADE")
+    if ROUTER_ADDRESS == "":
+        ROUTER_ADDRESS = ETH[0]
 
     time.sleep(0.5)
     print("COMPLETED ETH THREADS\n")

@@ -32,6 +32,7 @@ def setup():
     # UDP BROADCAST CONNECT
     keep_alive = socket(AF_INET, SOCK_DGRAM)
     keep_alive.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    keep_alive.bind(('255.255.255.255', BROADCAST_PORT))
 
     # PACKET CONNECT
     sock = socket(AF_INET, SOCK_DGRAM)
@@ -81,7 +82,8 @@ def main():
     global ROUTER
     global KILL
     sock, keep_alive = setup()  # UDP sock, TCP sock
-    # Thread(target=keep_alive_thread, args=(keep_alive,)).start() #TODO UNCOMMENT WHEN KEEP-ALIVE WORKING
+    Thread(target=keep_alive_thread, args=(keep_alive,)).start() #TODO UNCOMMENT WHEN KEEP-ALIVE WORKING
+    Thread(target=router_keep_alive, args=(keep_alive,)).start()
     print("Host IP: " + str(HOST_ADDRESS))
     print("Router IP: " + str(ROUTER_ADDRESS) + "\n")
 
