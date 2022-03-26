@@ -48,6 +48,7 @@ def eth_thread(eth, address):
             #TODO FIX THIS
 
         # FIXME CHECK WITH PROF IF DELAY NEED BETWEEN INTERFACES
+        # TODO fix delays
         if add[0] not in ETH:
             update_TTL(data)
             update_DELAY(data, DELAY)
@@ -63,12 +64,9 @@ def eth_thread(eth, address):
                 if dest in forward_table[interface][HOSTS]:
                     if interface == address:
                         found = True
-                        print("matching eth")
                         s.sendto(convert_to_json(data), (NAT[dest][ADDRESS], NAT[dest][PORT]))
                     else:
                         found = True
-                        print("not matching")
-                        print(interface)
                         s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
         # SCENARIO 2: DEST IP IN ANOTHER ROUTER
         else:
@@ -99,14 +97,12 @@ def broadcast_recv_thread():
 
         try:
             if address[0] in ETH: # TO ignore self broadcasts reads
-                print("void")
                 valid = False
             else:
                 data = convert_to_dict(data)
                 valid = True
         except:
             valid = False
-        print(valid)
         if valid:
             if data[TYPE] == TYPE_INITIALIZE:
                 forward_table[data.get(ROUTER_INTERFACE)][HOSTS].append(data[ADDRESS])
@@ -114,25 +110,17 @@ def broadcast_recv_thread():
                 NAT[data[ADDRESS]][ADDRESS] = address[0]
                 NAT[data[ADDRESS]][PORT] = address[1]
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
-                # print("NAT: " + str(NAT))
-                # print("FORWARD: " + str(forward_table))
             if data[TYPE] == TYPE_KEEP_ALIVE:
-                print("NAT: " + str(NAT))
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
             if data[TYPE] == TYPE_ADVERTISE:
-                print("UPDATING")
-                # TODO update neighbors timing and fix update,if neighbors updated then send update out
+                # TODO update neighbors timing and fix update,if neighbors updated then send update out DONT DO
                 update(forward_table, data)
-                NEIGHBORS[data[FROM]] = DELAY
-                #todo update keep alive with neighbors
-                #todo populate neigthbors
-                print("NEWWW table: "+ str(forward_table))
-
-        print("NAT: " + str(NAT))
-        print("FORWARD: " + str(forward_table))
+                if data[FROM] not in NEIGHBORS:
+                    NEIGHBORS[data[FROM]] = {}
+                    NEIGHBORS[data[FROM]][DELAY_STR] = DELAY
+                NEIGHBORS[data[FROM]][KEEP_ALIVE] = dt.datetime.now()
 
 # For sending forward table to neighbors
-# FIXME THIS IS FOR MULTI
 def broadcast_send_thread():
     print("Broadcast Sending Thread Started")
     sock_list = []
@@ -146,8 +134,6 @@ def broadcast_send_thread():
         for sock in sock_list:
             sock.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
 
-
-    # TODO CHECK FOR DEAD HOST HERE
         temp = NAT.copy()
         for key in temp:
             now = dt.datetime.now()
@@ -159,6 +145,57 @@ def broadcast_send_thread():
                         forward_table[eth][HOSTS].remove(key)
                         break
                 NAT.pop(key)
+
+        temp_neighbors = NEIGHBORS.copy()
+        for key in temp_neighbors:
+            now = dt.datetime.now()
+            temp = now - NEIGHBORS[key][KEEP_ALIVE]
+            if temp.total_seconds() > ROUTER_NOT_ALIVE:
+                print("REMOVING INACTIVE ROUTER: " + str(key))
+                forward_temp = forward_table.copy()
+                for forward_key in forward_temp:
+                    if forward_table[forward_key][SEND_TO] == key:
+                        forward_table.pop(forward_key)
+                NEIGHBORS.pop(key)
+        #neightbors and forward table
+        #forward table -> pop if send_to is the saem and if key is the same
+
+
+# PRINT TABLE
+# PRINT NAT
+# PRINT NEIGHBORS
+# SET DELAY 10   #when you update delay, you need to update neighbors
+def get_command_input():
+    global forward_table
+    global NAT
+    global DELAY
+    global NEIGHBORS
+    while True:
+        message = sys.stdin.readline()
+        message = message.strip().upper()
+        if message == PRINT_NAT:
+            print("NAT: " + str(NAT))
+        elif message == PRINT_FORWARD_TABLE:
+            print("FORWARD: " + str(forward_table))
+        elif message == PRINT_NEIGHBORS:
+            print("NEIGHBORS: " + str(NEIGHBORS))
+        elif message == PRINT_DELAY:
+            print("DELAY: " + str(DELAY))
+        else:
+            if SET_DELAY in message:
+                try:
+                    new_delay = int(message.split()[2])
+                    DELAY = new_delay
+                    for neigh in NEIGHBORS:
+                        NEIGHBORS[neigh][DELAY_STR] = DELAY
+                except:
+                    print("INVALID COMMAND")
+                    print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'SET DELAY <int>'")
+
+            else:
+                print("INVALID COMMAND")
+                print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'SET DELAY <int>'")
+
 
 
 if __name__ == "__main__":
@@ -205,5 +242,9 @@ if __name__ == "__main__":
     Thread(target=broadcast_send_thread).start()
     print("COMPLETED BROADCAST THREADS\n")
 
+    Thread(target=get_command_input).start()
     print("ROUTER HAS STARTED!")
     print(ETH)
+
+
+

@@ -25,7 +25,7 @@ RIP = "RIP"
 DEST_IP = "DEST_IP"
 SOURCE_IP = "SOURCE_IP"
 TTL = "TTL"
-DELAY = "DELAY"
+DELAY_STR = "DELAY"
 
 FROM = "FROM"
 TABLE = "TABLE"
@@ -33,6 +33,13 @@ TABLE = "TABLE"
 # KEEP ALIVE TIMING
 ROUTER_NOT_ALIVE = 7.5
 HOST_NOT_ALIVE = 6.5
+
+# ROUTER COMMANDS
+PRINT_NAT = "PRINT NAT"
+PRINT_FORWARD_TABLE = "PRINT FORWARD TABLE"
+PRINT_NEIGHBORS = "PRINT NEIGHBORS"
+PRINT_DELAY = "PRINT DELAY"
+SET_DELAY = "SET DELAY"
 
 
 # GENERAL FUNCTIONS
@@ -51,7 +58,7 @@ def copy_dict(d: dict):
 # Make Packet
 def make_packet(dest_ip, source_ip, ttl, protocol, message, delay=0):
     output = {DEST_IP: str(dest_ip), SOURCE_IP: str(source_ip), TTL: str(ttl), PROTOCOL: str(protocol),
-              MESSAGE: message, DELAY: delay}
+              MESSAGE: message, DELAY_STR: delay}
     return json.dumps(output).encode('utf-8')
 
 
@@ -71,5 +78,5 @@ def update_TTL(packet):
 
 # Although this returns a new dictionary this return is not need as parameter dictionary is updated
 def update_DELAY(packet, delay):
-    packet[DELAY] = int(packet[DELAY]) + int(delay)
+    packet[DELAY_STR] = int(packet[DELAY_STR]) + int(delay)
     return packet

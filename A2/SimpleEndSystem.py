@@ -107,7 +107,7 @@ def main():
                 decoded_message = convert_to_dict(message)
                 # FIXME NOT SURE IF NEEDED
                 # update_TTL(decoded_message)
-                info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY])
+                info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY_STR])
                 print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
             else:
                 try:

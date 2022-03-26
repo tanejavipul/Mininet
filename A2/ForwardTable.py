@@ -28,7 +28,6 @@ def update(cur: dict, update: dict):
     recv_table = update[TABLE]
     for key in recv_table:
         if key in cur:
-            print(key)
             # if hop count lower than update or send_to field same then copy hosts and update hops and send_to field
             if int(cur[key][HOPS]) > int(recv_table[key][HOPS])+1 or cur[key][SEND_TO] == update[FROM]: # or int(recv_table[key][HOPS]) == 0: # same router but differnt eth
                 cur[key][HOPS] = int(recv_table[key][HOPS]) + 1
