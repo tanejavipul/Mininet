@@ -18,15 +18,11 @@ NAT = {}
 forward_table = {}
 NEIGHBORS = {}
 
-def broadcast_setup():
-    s_recv = socket(AF_INET, SOCK_DGRAM)
-    s_recv.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    s_recv.bind(('255.255.255.255', BROADCAST_PORT))
-
-    s_send = socket(AF_INET, SOCK_DGRAM)
-    s_send.bind((ETH[0], BROADCAST_PORT)) #FIXME need to have multple broadcasting threads, one for each interface
-    s_send.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    return s_recv, s_send
+def broadcast_setup(ip):
+    s = socket(AF_INET, SOCK_DGRAM)
+    s.bind((ip, BROADCAST_PORT))
+    s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    return s
 
 
 def eth_thread(eth, address):
@@ -83,13 +79,18 @@ def eth_thread(eth, address):
 
 # For receiving FORWARD TABLE from neighbors to update current router tables
 # and for updating NAT's with KEEP_ALIVE
-def broadcast_recv_thread(s: socket):
+def broadcast_recv_thread():
     print("Broadcast Receiving Thread Started")
     global forward_table
     global NAT
+
+    s_recv = socket(AF_INET, SOCK_DGRAM)
+    s_recv.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    s_recv.bind(('255.255.255.255', BROADCAST_PORT))
+
     while True:
         valid = False
-        data, address = s.recvfrom(4096)
+        data, address = s_recv.recvfrom(4096)
         print("BROADCAST INCO: " + str((address, data)))
 
         try:
@@ -125,13 +126,18 @@ def broadcast_recv_thread(s: socket):
 
 # For sending forward table to neighbors
 # FIXME THIS IS FOR MULTI
-def broadcast_send_thread(s: socket):
+def broadcast_send_thread():
     print("Broadcast Sending Thread Started")
+    sock_list = []
+    for eth in ETH:
+        sock_list.append(broadcast_setup(eth))
+
     while True:
         time.sleep(2)
         adv = advertise(forward_table, ROUTER_ADDRESS)
         adv = convert_to_json(adv)
-        s.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
+        for sock in sock_list:
+            sock.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
 
     # TODO CHECK FOR DEAD HOST HERE
         for key in NAT:
@@ -188,10 +194,9 @@ if __name__ == "__main__":
     time.sleep(0.5)
     print("COMPLETED ETH THREADS\n")
 
-    s_recv, s_send = broadcast_setup()
     print("STARTING BROADCAST THREADS")
-    Thread(target=broadcast_recv_thread, args=(s_recv,)).start()
-    Thread(target=broadcast_send_thread, args=(s_send,)).start()
+    Thread(target=broadcast_recv_thread).start()
+    Thread(target=broadcast_send_thread).start()
     print("COMPLETED BROADCAST THREADS\n")
 
     print("ROUTER HAS STARTED!")
