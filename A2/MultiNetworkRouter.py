@@ -16,7 +16,7 @@ ROUTER_ADDRESS = ""
 
 NAT = {}
 forward_table = {}
-NEIGHBORS = {}
+NEIGHBORS = {} #TODO KILL ROUTER IF NOT ADVERTISED
 
 def broadcast_setup(ip):
     s = socket(AF_INET, SOCK_DGRAM)
@@ -42,6 +42,10 @@ def eth_thread(eth, address):
         print("ADDRESS: " + str(add) + " ETH: " + str(eth) + " PACKET: " + str(packet_data))
 
         data = convert_to_dict(packet_data)
+
+        if int(data[TTL]) < 1:
+            print("PACKET DROPPED")
+            #TODO FIX THIS
 
         # FIXME CHECK WITH PROF IF DELAY NEED BETWEEN INTERFACES
         if add[0] not in ETH:
@@ -91,7 +95,7 @@ def broadcast_recv_thread():
     while True:
         valid = False
         data, address = s_recv.recvfrom(4096)
-        print("BROADCAST INCO: " + str((address, data)))
+        # print("BROADCAST INCO: " + str((address, data)))
 
         try:
             if address[0] in ETH: # TO ignore self broadcasts reads
@@ -110,8 +114,8 @@ def broadcast_recv_thread():
                 NAT[data[ADDRESS]][ADDRESS] = address[0]
                 NAT[data[ADDRESS]][PORT] = address[1]
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
-                print("NAT: " + str(NAT))
-                print("FORWARD: " + str(forward_table))
+                # print("NAT: " + str(NAT))
+                # print("FORWARD: " + str(forward_table))
             if data[TYPE] == TYPE_KEEP_ALIVE:
                 print("NAT: " + str(NAT))
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
@@ -119,10 +123,13 @@ def broadcast_recv_thread():
                 print("UPDATING")
                 # TODO update neighbors timing and fix update,if neighbors updated then send update out
                 update(forward_table, data)
+                NEIGHBORS[data[FROM]] = DELAY
                 #todo update keep alive with neighbors
                 #todo populate neigthbors
                 print("NEWWW table: "+ str(forward_table))
 
+        print("NAT: " + str(NAT))
+        print("FORWARD: " + str(forward_table))
 
 # For sending forward table to neighbors
 # FIXME THIS IS FOR MULTI
@@ -139,8 +146,10 @@ def broadcast_send_thread():
         for sock in sock_list:
             sock.sendto(adv, ("255.255.255.255", BROADCAST_PORT))
 
+
     # TODO CHECK FOR DEAD HOST HERE
-        for key in NAT:
+        temp = NAT.copy()
+        for key in temp:
             now = dt.datetime.now()
             temp = now - NAT[key][KEEP_ALIVE]
             if temp.total_seconds() > HOST_NOT_ALIVE:
@@ -152,10 +161,6 @@ def broadcast_send_thread():
                 NAT.pop(key)
 
 
-def main():
-    pass
-
-
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         try:
@@ -164,6 +169,7 @@ if __name__ == "__main__":
             else:
                 delay = int(sys.argv[1])
                 print("Delay: " + str(delay))
+            DELAY = delay
         except:
             print("Please provide a number for delay")
             print("Delay: 1")

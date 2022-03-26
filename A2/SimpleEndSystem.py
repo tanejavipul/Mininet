@@ -61,6 +61,7 @@ def keep_alive_thread(s: socket):
         s.sendto(simple_packet, ("255.255.255.255", BROADCAST_PORT))
         w = dt.datetime.now() - ROUTER_KEEP_ALIVE
         if w.total_seconds() > ROUTER_NOT_ALIVE:
+            KILL = 1
             print("ROUTER IS NOT ALIVE ANYMORE!!!!!!!!!!")
             exit()
 
@@ -72,17 +73,19 @@ def router_keep_alive(s: socket):
     while True:
         global ROUTER_KEEP_ALIVE
         data, address = s.recvfrom(4096)
-        print("RECV: " + str((address, data)))
+        # print("RECV: " + str((address, data)))
         data_dict = convert_to_dict(data)
         if data_dict[TYPE] == TYPE_ADVERTISE:
             ROUTER_KEEP_ALIVE = dt.datetime.now()
+        if KILL == 1:
+            exit()
 
 
 def main():
     global ROUTER
     global KILL
     sock, keep_alive = setup()  # UDP sock, TCP sock
-    Thread(target=keep_alive_thread, args=(keep_alive,)).start() #TODO UNCOMMENT WHEN KEEP-ALIVE WORKING
+    Thread(target=keep_alive_thread, args=(keep_alive,)).start()
     Thread(target=router_keep_alive, args=(keep_alive,)).start()
     print("Host IP: " + str(HOST_ADDRESS))
     print("Router IP: " + str(ROUTER_ADDRESS) + "\n")
@@ -93,12 +96,12 @@ def main():
         sockets_list = [sys.stdin, sock]
 
         read_sockets, write_socket, error_socket = select.select(sockets_list, [], [])
-        if KILL == 1:
-            print("ROUTER IS NOT ALIVE")
-            print("HOST EXITING")
-            exit()
 
         for socks in read_sockets:
+            if KILL == 1:
+                print("ROUTER IS NOT ALIVE")
+                print("HOST EXITING")
+                exit()
             if socks == sock:
                 message, add = socks.recvfrom(4096)
                 decoded_message = convert_to_dict(message)
@@ -107,13 +110,18 @@ def main():
                 info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY])
                 print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
             else:
-                message = sys.stdin.readline()
-
-                message = message.split(" ")
-                packet = extract(message)
-                if packet is not None:
-                    sock.sendto(packet, ROUTER)
-                sys.stdout.flush()
+                try:
+                    message = sys.stdin.readline()
+                    message = message.split(" ")
+                    packet = extract(message)
+                    if packet is not None:
+                        sock.sendto(packet, ROUTER)
+                    sys.stdout.flush()
+                except:
+                    if KILL == 1:
+                        print("ROUTER IS NOT ALIVE")
+                        print("HOST EXITING")
+                        exit()
 
 
 def extract(message):
@@ -121,6 +129,7 @@ def extract(message):
         print("Please input in format [IP] [TTL] [MESSAGE]")
         return None
     else:
+        #TODO ADD OSFP VALIDATION
         if message[1].upper() == OSPF:
             pass
         else:

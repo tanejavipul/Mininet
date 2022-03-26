@@ -39,14 +39,11 @@ def update(cur: dict, update: dict):
             cur[key][HOPS] = int(recv_table[key][HOPS]) + 1
             cur[key][SEND_TO] = update[FROM]
             cur[key][HOSTS] = recv_table[key][HOSTS]
-    lst = []
-    for key in cur:
+
+    temp = cur.copy()
+    for key in temp:
         if cur[key][SEND_TO] == update[FROM] and key not in recv_table:
-            lst.append(key)
-
-    for key in lst:
-        cur.pop(key)
-
+            cur.pop(key)
 
 # current = {'1.1.1.1': {'HOSTS': ['323.232.3.2'], 'HOPS': 0, 'SEND_TO': '1.1.1.1'}}
 # neigh = {'7.7.7.7': {'HOSTS': ['9.9.9.9.9'], 'HOPS': 10, 'SEND_TO': '7.7.7.7'}}
