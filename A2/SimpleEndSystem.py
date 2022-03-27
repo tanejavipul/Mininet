@@ -126,22 +126,26 @@ def main():
 
 def extract(message):
     if len(message) < 3:
-        print("Please input in format [IP] [TTL] [MESSAGE]")
+        print("Please input in format [IP] [OSPF (opt)] [TTL] [MESSAGE]")
         return None
     else:
-        #TODO ADD OSFP VALIDATION
-        if message[1].upper() == OSPF:
-            pass
-        else:
-            ip = message[0]
-            # print('ip argument : ' + ip)
-            ttl = message[1]
-            # print('ttl argument: ' + ttl)
-            message_as_lst = message[2:]
-            # print('message_as_lst: ' + str(message_as_lst))
-            full_message = ' '.join(message_as_lst)
-            # print('full_message: |' + full_message + "|")
-            return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_RIP, full_message)
+        try:
+            if message[1].upper() == OSPF:
+                ip = message[0]
+                ttl = message[2]
+                message_arg = message[3:]
+                full_message = ' '.join(message_arg)
+                return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_OSPF, full_message)
+            # Default RIP
+            else:
+                ip = message[0]
+                ttl = message[1]
+                message_as_lst = message[2:]
+                full_message = ' '.join(message_as_lst)
+                return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_RIP, full_message)
+        except:
+            print("Please input in format [IP] [OSPF (opt)] [TTL] [MESSAGE]")
+            return None
 
 
 if __name__ == "__main__":
