@@ -28,6 +28,7 @@ TTL = "TTL"
 DELAY_STR = "DELAY"
 
 FROM = "FROM"
+TO = "TO"
 TABLE = "TABLE"
 
 # KEEP ALIVE TIMING
@@ -69,6 +70,10 @@ def make_broadcast_packet(type, address, ttl, message, router_interface):
               ROUTER_INTERFACE: str(router_interface)}
     return json.dumps(output).encode('utf-8')
 
+
+def make_OSPF_packet(from_router, to_router):
+    output = {TYPE: str(type), FROM: str(from_router), TO: str(to_router)}
+    return json.dumps(output).encode('utf-8')
 
 
 # Although this returns a new dictionary this return is not need as parameter dictionary is updated

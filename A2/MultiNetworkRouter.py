@@ -72,6 +72,7 @@ def eth_thread(eth, address):
                             s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
             # SCENARIO 2: DEST IP IN ANOTHER ROUTER
             else:
+                #TODO OSPF
                 for key in forward_table:
                     if dest in forward_table[key][HOSTS]:
                         found = True
