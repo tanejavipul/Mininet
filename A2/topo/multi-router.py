@@ -1,5 +1,22 @@
 # RITVIK AND VIPUL COLAB
 
+##################### ROUTER TOPOLGY #####################
+#           ┌───┐       ┌───┐
+#   ┌───────┤r2 ├───────┤r3 ├──────┐
+#   │       └─┬─┘       └─┬─┘      │
+#   │         │           │        │
+#   │         └───┐   ┌───┘        │
+# ┌─┴─┐           ├───┤          ┌─┴─┐
+# │r1 ├───────────┤r6 ├──────────┤r4 │
+# └─┬─┘           └─┬─┘          └─┬─┘
+#   │               │              │
+#   │               │              │
+#   │             ┌─┴─┐            │
+#   └─────────────┤r5 ├────────────┘
+#                 └───┘
+# *NOTE: R6 can be used a MONITOR NODE or a MULTI-ROUTER.*
+##################### ROUTER TOPOLGY #####################
+
 # !/usr/bin/python
 from mininet.topo import Topo
 from mininet.net import Mininet
@@ -18,9 +35,9 @@ class LinuxRouter(Node):
         super(LinuxRouter, self).terminate()
 
 
-NUM_NODES = 5
+NUM_NODES = 6
 connect = [(0, 1), (1, 2), (1, 3), (0, 4), (4, 3)]
-
+connect.extend([(0, 5), (1, 5), (2, 5), (3, 5), (4, 5)])
 made_connections = []
 
 
@@ -33,6 +50,8 @@ class NetworkTopo(Topo):
         for x in range(NUM_NODES):
             r.append(self.addHost(f'r{x + 1}', cls=LinuxRouter, ip=f'10.{x}.0.1/24'))  # 10.0.0.1 10.1.0.1 10.2.0.1
             print(r[x])
+
+        monitor_node = self.addHost('monitor', cls=LinuxRouter, ip=f'30.0.0.1/24')
 
         # Add NUM_NODES to s
         for x in range(NUM_NODES):
@@ -87,14 +106,6 @@ def run():
     # Add routing for reaching networks that aren't directly connected
     for routerName, ip, gateway, eth in made_connections:
         info(net[routerName].cmd(f'ip route add {ip} via {gateway} dev {eth}'))
-
-    # Add routing for reaching networks that aren't directly connected
-    # info(net['r1'].cmd("ip route add 10.1.0.0/24 via 10.10.0.2 dev r1-LINK-r2"))
-    # info(net['r2'].cmd("ip route add 10.0.0.0/24 via 10.10.0.1 dev r2-LINK-r1"))
-
-    # #add r1 to r3
-    # info(net['r1'].cmd("ip route add 10.2.0.0/24 via 10.20.0.2 dev r1-LINK-r3"))
-    # info(net['r3'].cmd("ip route add 10.0.0.0/24 via 10.20.0.1 dev r3-LINK-r1"))
 
     net.start()
     CLI(net)
