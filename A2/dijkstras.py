@@ -52,7 +52,10 @@ class Graph:
     # EDITED
     # this function returns the next node to go to for the shortest path
     def shortest_path_next(self, start, finish):
-        return self.shortest_path(start, finish)[0]
+        output = self.shortest_path(start, finish)
+        if type(output) == dict:
+            return None
+        return self.shortest_path(start, finish)[-1]
 
     def remove_vertex(self, key):
         self.vertices.pop(key)
@@ -69,6 +72,6 @@ class Graph:
 #     g.add_vertex('E', {'H': 1})
 #     g.add_vertex('F', {'B': 2, 'C': 6, 'D': 8, 'G': 9, 'H': 3})
 #     g.add_vertex('G', {'C': 4, 'F': 9})
-#     g.add_vertex('H', {'E': 1, 'F': 3})Z
+#     g.add_vertex('H', {'E': 1, 'F': 3})
 #     print(g.shortest_path('A', 'H'))
 #     print(g.shortest_path_next('A', 'H'))
