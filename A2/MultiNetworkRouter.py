@@ -9,19 +9,22 @@ from threading import Thread
 from ForwardTable import *
 import netifaces as ni
 import datetime as dt
+from dijkstras import *
 
 DELAY = 1
-ETH = []
+INTERFACES = []
 ROUTER_ADDRESS = ""
 
 NAT = {}
 forward_table = {}
 NEIGHBORS = {}
 NEIGHBORS_ALIVE = {}
+TOPOLOGY = Graph()
+
 
 def broadcast_setup(ip):
     s = socket(AF_INET, SOCK_DGRAM)
-    s.bind((ip, BROADCAST_PORT))
+    s.bind((ip, 0))
     s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     return s
 
@@ -42,6 +45,7 @@ def eth_thread(eth, address):
         packet_data, add = s.recvfrom(4096)
         print("ADDRESS: " + str(add) + " ETH: " + str(eth) + " PACKET: " + str(packet_data))
 
+
         data = convert_to_dict(packet_data)
         dropped = False
 
@@ -50,7 +54,7 @@ def eth_thread(eth, address):
         update_TTL(data)
         update_DELAY(data, DELAY)
 
-        if int(data[TTL]) < 0:
+        if data[PROTOCOL] == PROTOCOL_RIP and int(data[TTL]) < 0:
             print("ERROR: PACKET DROPPED - TTL ERROR")
             dropped = True
 
@@ -62,7 +66,7 @@ def eth_thread(eth, address):
             dest = data[DEST_IP]
             found = False
             if dest in NAT:
-                for interface in ETH:
+                for interface in INTERFACES:
                     if dest in forward_table[interface][HOSTS]:
                         if interface == address:
                             found = True
@@ -72,14 +76,21 @@ def eth_thread(eth, address):
                             s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
             # SCENARIO 2: DEST IP IN ANOTHER ROUTER
             else:
-                #TODO OSPF
-                for key in forward_table:
-                    if dest in forward_table[key][HOSTS]:
-                        found = True
-                        s.sendto(convert_to_json(data), (forward_table[key][SEND_TO], ROUTER_PORT))
-                        break
+                if data[PROTOCOL] == PROTOCOL_OSPF:
+                    print("INSIDE OSPFF")
+                    next = TOPOLOGY.shortest_path_next(ROUTER_ADDRESS, dest)
+                    print("NEXT: " + str(next))
+                    if next is not None:
+                        s.sendto(convert_to_json(data), (next, ROUTER_PORT))
+                else:
+                    for key in forward_table:
+                        if dest in forward_table[key][HOSTS]:
+                            found = True
+                            s.sendto(convert_to_json(data), (forward_table[key][SEND_TO], ROUTER_PORT))
+                            break
             if not found:
                 print("ERROR: PACKET DROPPED - DESTINATION NOT FOUND")
+
 
 
 # For receiving FORWARD TABLE from neighbors to update current router tables
@@ -88,24 +99,30 @@ def broadcast_recv_thread():
     print("Broadcast Receiving Thread Started")
     global forward_table
     global NAT
+    global ROUTER_ADDRESS
+    global TOPOLOGY
+    global NEIGHBORS
+
+    sock_list = []
+    for eth in INTERFACES:
+        sock_list.append(broadcast_setup(eth))
 
     s_recv = socket(AF_INET, SOCK_DGRAM)
     s_recv.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     s_recv.bind(('255.255.255.255', BROADCAST_PORT))
 
     while True:
-        valid = False
         data, address = s_recv.recvfrom(4096)
-        # print("BROADCAST INCO: " + str((address, data)))
 
         try:
-            if address[0] in ETH: # TO ignore self broadcasts reads
+            if address[0] in INTERFACES:  # TO ignore self broadcasts reads
                 valid = False
             else:
                 data = convert_to_dict(data)
                 valid = True
         except:
             valid = False
+
         if valid:
             if data[TYPE] == TYPE_INITIALIZE:
                 forward_table[data.get(ROUTER_INTERFACE)][HOSTS].append(data[ADDRESS])
@@ -113,12 +130,25 @@ def broadcast_recv_thread():
                 NAT[data[ADDRESS]][ADDRESS] = address[0]
                 NAT[data[ADDRESS]][PORT] = address[1]
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
+                NEIGHBORS[data[ADDRESS]] = 0
+
+
             if data[TYPE] == TYPE_KEEP_ALIVE:
                 NAT[data[ADDRESS]][KEEP_ALIVE] = dt.datetime.now()
+
             if data[TYPE] == TYPE_ADVERTISE:
                 update(forward_table, data)
                 NEIGHBORS[data[FROM]] = DELAY
                 NEIGHBORS_ALIVE[data[FROM]] = dt.datetime.now()
+
+            if data[TYPE] == MONITOR_REQUEST:
+                monitor = monitor_response(ROUTER_ADDRESS, NEIGHBORS)
+                monitor_packet = convert_to_json(monitor)
+                for sock in sock_list:
+                    sock.sendto(monitor_packet, ("255.255.255.255", BROADCAST_PORT))
+            if data[TYPE] == MONITOR_TOPO:
+                TOPOLOGY.vertices = data[STR_NEIGHBORS]
+                print("TOPOLGY: " + str(TOPOLOGY))
 
 
 # For sending forward table to neighbors
@@ -129,7 +159,7 @@ def broadcast_send_thread():
     global NEIGHBORS
     print("Broadcast Sending Thread Started")
     sock_list = []
-    for eth in ETH:
+    for eth in INTERFACES:
         sock_list.append(broadcast_setup(eth))
 
     while True:
@@ -145,13 +175,14 @@ def broadcast_send_thread():
             temp = now - NAT[key][KEEP_ALIVE]
             if temp.total_seconds() > HOST_NOT_ALIVE:
                 print("REMOVING INACTIVE HOST: " + str(key))
-                for eth in ETH:
+                for eth in INTERFACES:
                     if key in forward_table[eth][HOSTS]:
                         forward_table[eth][HOSTS].remove(key)
                         break
                 NAT.pop(key)
+                NEIGHBORS.pop(key) # To Remove Host from neighbors
 
-        temp_neighbors = NEIGHBORS.copy()
+        temp_neighbors = NEIGHBORS_ALIVE.copy()
         for key in temp_neighbors:
             now = dt.datetime.now()
             temp = now - NEIGHBORS_ALIVE[key]
@@ -163,8 +194,8 @@ def broadcast_send_thread():
                         forward_table.pop(forward_key)
                 NEIGHBORS.pop(key)
                 NEIGHBORS_ALIVE.pop(key)
-        #neightbors and forward table
-        #forward table -> pop if send_to is the saem and if key is the same
+        # neightbors and forward table
+        # forward table -> pop if send_to is the saem and if key is the same
 
 
 # PRINT TABLE
@@ -196,12 +227,12 @@ def get_command_input():
                         NEIGHBORS[neigh] = DELAY
                 except:
                     print("INVALID COMMAND")
-                    print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'SET DELAY <int>'")
+                    print(
+                        "VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'SET DELAY <int>'")
 
             else:
                 print("INVALID COMMAND")
                 print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'SET DELAY <int>'")
-
 
 
 if __name__ == "__main__":
@@ -232,13 +263,13 @@ if __name__ == "__main__":
         if ip:
             thr = Thread(target=eth_thread, args=(inter, ip,))
             thr.start()
-            ETH.append(ip)
+            INTERFACES.append(ip)
             all_thread.append(thr)
 
-    if len(ETH) == 0:
+    if len(INTERFACES) == 0:
         raise Exception("ERROR: NO THREAD WERE MADE")
     if ROUTER_ADDRESS == "":
-        ROUTER_ADDRESS = ETH[0]
+        ROUTER_ADDRESS = INTERFACES[0]
 
     time.sleep(0.5)
     print("COMPLETED ETH THREADS\n")
@@ -250,7 +281,4 @@ if __name__ == "__main__":
 
     Thread(target=get_command_input).start()
     print("ROUTER HAS STARTED!")
-    print(ETH)
-
-
-
+    print("INTERFACES: " + str(INTERFACES))

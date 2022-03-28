@@ -44,6 +44,10 @@ SET_DELAY = "SET DELAY"
 STR_NEIGHBORS = "NEIGHBORS"
 
 
+MONITOR_REQUEST = "MONITOR_REQUEST"
+MONITOR_RESPONSE = "MONITOR_RESPONSE"
+MONITOR_TOPO = "MONITOR_TOPO"
+
 # GENERAL FUNCTIONS
 def convert_to_json(packet: dict):
     return json.dumps(packet).encode('utf-8')
@@ -66,7 +70,7 @@ def make_packet(dest_ip, source_ip, ttl, protocol, message, delay=0):
 
 # BROADCAST FUNCTIONS
 def make_broadcast_packet(type, address, ttl, message, router_interface):
-    output = {TYPE: str(type), ADDRESS: str(address), MESSAGE: str(message), TTL: ttl,
+    output = {TYPE: str(type), ADDRESS: str(address), MESSAGE: message, TTL: ttl,
               ROUTER_INTERFACE: str(router_interface)}
     return json.dumps(output).encode('utf-8')
 

@@ -124,12 +124,14 @@ def main():
                         exit()
 
 
+# FIXME ERIC
 def extract(message):
     if len(message) < 3:
-        print("Please input in format [IP] [OSPF (opt)] [TTL] [MESSAGE]")
+        print("Please input in format [IP] [OSPF OR TTL] [MESSAGE]")
         return None
     else:
         try:
+            # TODO OSPF DOESNT HAVE TTL
             if message[1].upper() == OSPF:
                 ip = message[0]
                 ttl = message[2]
@@ -144,7 +146,7 @@ def extract(message):
                 full_message = ' '.join(message_as_lst)
                 return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_RIP, full_message)
         except:
-            print("Please input in format [IP] [OSPF (opt)] [TTL] [MESSAGE]")
+            print("Please input in format [IP] [OSPF OR TTL] [MESSAGE]")
             return None
 
 

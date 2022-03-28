@@ -3,6 +3,17 @@ import json
 from Packets import *
 
 
+
+
+def monitor_request():
+    return {TYPE: MONITOR_REQUEST}
+
+
+def monitor_response(router_ip, neighbors):
+    return {TYPE: MONITOR_RESPONSE, ROUTER_INTERFACE: router_ip, STR_NEIGHBORS: neighbors}
+
+def monitor_topo(topo):
+    return {TYPE: MONITOR_TOPO, STR_NEIGHBORS: topo}
 # broadcast a message to neighbouring routers with the destinations that you can reach and the distance within which
 # you can reach them
 def advertise(forward_table, interface, neighbor):
