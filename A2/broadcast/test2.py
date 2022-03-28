@@ -53,3 +53,24 @@ if __name__ == "__main__":
     while True:
         conn, addr = s.accept()
         print(conn.recv(4096))
+
+
+
+
+# TODO this is for sending to monitor
+MYPORT = 8080
+
+import sys, time
+from socket import *
+
+s = socket(AF_INET, SOCK_DGRAM)
+
+
+# s.bind(('10.0.1.10', 0))
+# s.bind(('192.168.84.129', MYPORT)) 172.16.0.100
+print(s)
+print("Start sending....")
+
+while 1:
+    data = "hello my name jefff57"
+    s.sendto(data.encode(), ('10.0.0.1', MYPORT))
