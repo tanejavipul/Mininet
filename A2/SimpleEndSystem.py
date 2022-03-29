@@ -150,7 +150,7 @@ def extract(message):
                 full_message = ' '.join(message_as_lst)
                 return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_RIP, full_message)
         except:
-            print("Please input in format [IP] [OSPF OR TTL] [MESSAGE]")
+            print("Please input in format [IP] [OSPF OR <int: TTL>] [MESSAGE]")
             return None
 
 
