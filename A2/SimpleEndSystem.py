@@ -44,15 +44,14 @@ def setup():
 def send_broadcast(s):
     global ROUTER_KEEP_ALIVE
     ROUTER_KEEP_ALIVE = dt.datetime.now()
-
-    message = "Hello I am a host"
-    simple_packet = make_broadcast_packet(TYPE_INITIALIZE, HOST_ADDRESS, 0, message, ROUTER_ADDRESS)
+    simple_packet = make_broadcast_packet(TYPE_INITIALIZE, HOST_ADDRESS, 0, TYPE_INITIALIZE, ROUTER_ADDRESS)
     s.sendto(simple_packet, ("255.255.255.255", BROADCAST_PORT))
 
 
 # This sends a keep alive message to router to tell router this IP is still active
 # FOR SENDING KEEPALIVE
 def keep_alive_thread(s: socket):
+    global KILL
     print("Keep Alive Thread Started")
     message = "KEEP_ALIVE"
     simple_packet = make_broadcast_packet(TYPE_KEEP_ALIVE, HOST_ADDRESS, 0, message, ROUTER_ADDRESS)
@@ -105,10 +104,17 @@ def main():
             if socks == sock:
                 message, add = socks.recvfrom(4096)
                 decoded_message = convert_to_dict(message)
-                # FIXME NOT SURE IF NEEDED
-                # update_TTL(decoded_message)
-                info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY_STR])
-                print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
+                # FIX if needed
+                update_TTL(decoded_message)
+                if decoded_message[PROTOCOL] == PROTOCOL_OSPF:
+                    info = "   DELAY:" + str(decoded_message[DELAY_STR])
+                    print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
+                else:
+                    if decoded_message[TTL] < 0:
+                        print("ERROR TTL: PACKET DROPPED")
+                    else:
+                        info = "   TTL:" + str(decoded_message[TTL]) + "   DELAY:" + str(decoded_message[DELAY_STR])
+                        print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
             else:
                 try:
                     message = sys.stdin.readline()
@@ -127,17 +133,15 @@ def main():
 # FIXME ERIC
 def extract(message):
     if len(message) < 3:
-        print("Please input in format [IP] [OSPF OR TTL] [MESSAGE]")
+        print("Please input in format [IP] [OSPF OR <int: TTL>] [MESSAGE]")
         return None
     else:
         try:
-            # TODO OSPF DOESNT HAVE TTL
             if message[1].upper() == OSPF:
                 ip = message[0]
-                ttl = message[2]
-                message_arg = message[3:]
+                message_arg = message[2:]
                 full_message = ' '.join(message_arg)
-                return make_packet(ip, HOST_ADDRESS, int(ttl), PROTOCOL_OSPF, full_message)
+                return make_packet(ip, HOST_ADDRESS, 200, PROTOCOL_OSPF, full_message)
             # Default RIP
             else:
                 ip = message[0]

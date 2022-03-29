@@ -36,7 +36,7 @@ class LinuxRouter(Node):
 
 
 NUM_NODES = 6
-connect = [(0, 1), (1, 2), (1, 3), (0, 4), (4, 3)]
+connect = [(0, 1), (1, 2), (2, 3), (0, 4), (4, 3)]
 connect.extend([(0, 5), (1, 5), (2, 5), (3, 5), (4, 5)])
 made_connections = []
 
