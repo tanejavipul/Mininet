@@ -49,6 +49,8 @@ MONITOR_REQUEST = "MONITOR_REQUEST"
 MONITOR_RESPONSE = "MONITOR_RESPONSE"
 MONITOR_TOPO = "MONITOR_TOPO"
 
+SUBNET_BROADCAST = "<BROADCAST>"
+
 # GENERAL FUNCTIONS
 def convert_to_json(packet: dict):
     return json.dumps(packet).encode('utf-8')

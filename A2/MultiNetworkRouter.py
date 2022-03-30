@@ -42,56 +42,76 @@ def eth_thread(eth, address):
     FORWARD_TABLE[address][SEND_TO] = address
 
     while True:
+
         packet_data, add = s.recvfrom(4096)
         print("ADDRESS: " + str(add) + " ETH: " + str(eth) + " PACKET: " + str(packet_data))
 
+        try:
+            data = convert_to_dict(packet_data)
+            dropped = False
 
-        data = convert_to_dict(packet_data)
-        dropped = False
+            # FIXME CHECK WITH PROF IF DELAY NEED BETWEEN INTERFACES
+            # TODO fix delays
+            if data[DEST_IP] not in HOST_LIST:
+                update_TTL(data)
+                update_DELAY(data, DELAY)
 
-        # FIXME CHECK WITH PROF IF DELAY NEED BETWEEN INTERFACES
-        # TODO fix delays
-        if data[DEST_IP] not in HOST_LIST:
-            update_TTL(data)
-            update_DELAY(data, DELAY)
-
-        if data[PROTOCOL] == PROTOCOL_RIP and int(data[TTL]) < 0:
-            print("ERROR: PACKET DROPPED - TTL ERROR")
-            dropped = True
-
-        # Scenarios
-        # SCENARIO 1: INTERNAL COMMUNICATION
-        #       -->  SCENARIO 1.1  -  DEST IP IS IN CURRENT ETH
-        #       -->  SCENARIO 1.2  -  DEST IP IS OTHER ETH
-        if not dropped:
-            dest = data[DEST_IP]
-            found = False
-            if dest in HOST_LIST:
-                for interface in INTERFACES:
-                    if dest in FORWARD_TABLE[interface][HOSTS]:
-                        if interface == address:
-                            found = True
-                            s.sendto(convert_to_json(data), (HOST_LIST[dest][ADDRESS], HOST_LIST[dest][PORT]))
-                        else:
-                            found = True
-                            s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
-            # SCENARIO 2: DEST IP IN ANOTHER ROUTER
-            else:
-                if data[PROTOCOL] == PROTOCOL_OSPF:
-                    print("INSIDE OSPFF")
-                    next = TOPOLOGY.shortest_path_next(ROUTER_ADDRESS, dest)
-                    print("NEXT: " + str(next))
-                    if next is not None:
-                        found = True
-                        s.sendto(convert_to_json(data), (next, ROUTER_PORT))
-                else:
-                    for key in FORWARD_TABLE:
-                        if dest in FORWARD_TABLE[key][HOSTS]:
-                            found = True
-                            s.sendto(convert_to_json(data), (FORWARD_TABLE[key][SEND_TO], ROUTER_PORT))
+            if data[PROTOCOL] == PROTOCOL_RIP and int(data[TTL]) < 0:
+                print("ERROR: PACKET DROPPED - TTL ERROR")
+                dropped = True
+            print("BEFORE SUBNET IF")
+            # TODO FIX THIS
+            if data[PROTOCOL] == SUBNET_BROADCAST:
+                dropped = True
+                dest = data[DEST_IP]
+                print(dest)
+                for host in HOST_LIST:
+                    if host.startswith(dest):
+                        for interface in INTERFACES:
+                            if host in FORWARD_TABLE[interface][HOSTS]:
+                                if interface == address:
+                                    print("if")
+                                    s.sendto(convert_to_json(data), (HOST_LIST[host][ADDRESS], HOST_LIST[host][PORT]))
+                                else:
+                                    print("else")
+                                    s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
                             break
-            if not found:
-                print("ERROR: PACKET DROPPED - DESTINATION NOT FOUND")
+            # Scenarios
+            # SCENARIO 1: INTERNAL COMMUNICATION
+            #       -->  SCENARIO 1.1  -  DEST IP IS IN CURRENT ETH
+            #       -->  SCENARIO 1.2  -  DEST IP IS OTHER ETH
+            if not dropped:
+                dest = data[DEST_IP]
+                found = False
+                if dest in HOST_LIST:
+                    for interface in INTERFACES:
+                        if dest in FORWARD_TABLE[interface][HOSTS]:
+                            if interface == address:
+                                found = True
+                                s.sendto(convert_to_json(data), (HOST_LIST[dest][ADDRESS], HOST_LIST[dest][PORT]))
+                            else:
+                                found = True
+                                s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
+                # SCENARIO 2: DEST IP IN ANOTHER ROUTER
+                else:
+                    if data[PROTOCOL] == PROTOCOL_OSPF:
+                        print("INSIDE OSPFF")
+                        next = TOPOLOGY.shortest_path_next(ROUTER_ADDRESS, dest)
+                        print("NEXT: " + str(next))
+                        if next is not None:
+                            found = True
+                            s.sendto(convert_to_json(data), (next, ROUTER_PORT))
+                    else:
+                        for key in FORWARD_TABLE:
+                            if dest in FORWARD_TABLE[key][HOSTS]:
+                                found = True
+                                s.sendto(convert_to_json(data), (FORWARD_TABLE[key][SEND_TO], ROUTER_PORT))
+                                break
+                if not found:
+                    print("ERROR: PACKET DROPPED - DESTINATION NOT FOUND")
+        except :
+            print("ERROR: POTENTIAL PACKET DROP")
+            # print("EXCEPTION: " + str(e))
 
 
 

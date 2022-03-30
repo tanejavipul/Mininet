@@ -106,7 +106,10 @@ def main():
                 decoded_message = convert_to_dict(message)
                 # FIX if needed
                 update_TTL(decoded_message)
-                if decoded_message[PROTOCOL] == PROTOCOL_OSPF:
+                if decoded_message[PROTOCOL] == SUBNET_BROADCAST:
+                    print("<BROADCAST> FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE])
+                    pass
+                elif decoded_message[PROTOCOL] == PROTOCOL_OSPF:
                     info = "   DELAY:" + str(decoded_message[DELAY_STR])
                     print("FROM:(" + decoded_message[SOURCE_IP] + ") " + decoded_message[MESSAGE] + info)
                 else:
@@ -130,14 +133,17 @@ def main():
                         exit()
 
 
-# FIXME ERIC
 def extract(message):
     if len(message) < 3:
-        print("Please input in format [IP] [OSPF OR <int: TTL>] [MESSAGE]")
+        print("Please input in format [IP] [OSPF OR <int: TTL>] [MESSAGE] or <BROADCAST> [MESSAGE]")
         return None
     else:
         try:
-            if message[1].upper() == OSPF:
+            if message[0].upper() == SUBNET_BROADCAST:
+                message_arg = message[1:]
+                full_message = ' '.join(message_arg)
+                return make_packet(ROUTER_ADDRESS, HOST_ADDRESS, 200, SUBNET_BROADCAST, full_message)
+            elif message[1].upper() == OSPF:
                 ip = message[0]
                 message_arg = message[2:]
                 full_message = ' '.join(message_arg)
