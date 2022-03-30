@@ -1,3 +1,4 @@
+import ipaddress
 import os
 import random
 import select
@@ -41,6 +42,14 @@ def eth_thread(eth, address):
     FORWARD_TABLE[address][HOPS] = 0
     FORWARD_TABLE[address][SEND_TO] = address
 
+    #Setup Subnet Broadcasting
+    netmask = ni.ifaddresses(eth)[ni.AF_INET][0]['netmask']
+    addressWithNetmask = address + "/" + netmask
+    net = ipaddress.ip_network(addressWithNetmask, strict=False)
+    network = int(net.network_address)
+    netmask = int(net.netmask)
+
+
     while True:
 
         packet_data, add = s.recvfrom(4096)
@@ -59,29 +68,24 @@ def eth_thread(eth, address):
             if data[PROTOCOL] == PROTOCOL_RIP and int(data[TTL]) < 0:
                 print("ERROR: PACKET DROPPED - TTL ERROR")
                 dropped = True
-            print("BEFORE SUBNET IF")
-            # TODO FIX THIS
+
+
+            # Scenarios
+            # Scenarios 1: Subnet Broadcast
             if data[PROTOCOL] == SUBNET_BROADCAST:
                 dropped = True
                 dest = data[DEST_IP]
-                router = None
-                netmask = None
                 print(dest)
                 for host in HOST_LIST:
-                    if host.startswith(dest):
-                        for interface in INTERFACES:
-                            if host in FORWARD_TABLE[interface][HOSTS]:
-                                if interface == address:
-                                    print("if")
-                                    s.sendto(convert_to_json(data), (HOST_LIST[host][ADDRESS], HOST_LIST[host][PORT]))
-                                else:
-                                    print("else")
-                                    s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
-                            break
-            # Scenarios
-            # SCENARIO 1: INTERNAL COMMUNICATION
-            #       -->  SCENARIO 1.1  -  DEST IP IS IN CURRENT ETH
-            #       -->  SCENARIO 1.2  -  DEST IP IS OTHER ETH
+                    temp = int(ipaddress.ip_address(host))
+                    print("host: " + str(host) + "   " + str((temp & netmask) == network))
+                    if (temp & netmask) == network:
+                        if not host == data[SOURCE_IP]:
+                            s.sendto(convert_to_json(data), (HOST_LIST[host][ADDRESS], HOST_LIST[host][PORT]))
+
+            # SCENARIO 2: INTERNAL COMMUNICATION
+            #       -->  SCENARIO 2.1  -  DEST IP IS IN CURRENT ETH
+            #       -->  SCENARIO 2.2  -  DEST IP IS OTHER ETH
             if not dropped:
                 dest = data[DEST_IP]
                 found = False
@@ -94,7 +98,9 @@ def eth_thread(eth, address):
                             else:
                                 found = True
                                 s.sendto(convert_to_json(data), (interface, ROUTER_PORT))
-                # SCENARIO 2: DEST IP IN ANOTHER ROUTER
+
+            # SCENARIO 3: INTERNAL COMMUNICATION
+            #       -->  SCENARIO 3.1 DEST IP IN ANOTHER ROUTER
                 else:
                     if data[PROTOCOL] == PROTOCOL_OSPF:
                         print("INSIDE OSPFF")

@@ -32,11 +32,13 @@ def setup():
     # UDP BROADCAST CONNECT
     keep_alive = socket(AF_INET, SOCK_DGRAM)
     keep_alive.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    keep_alive.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     keep_alive.bind(('255.255.255.255', BROADCAST_PORT))
 
     # PACKET CONNECT
     sock = socket(AF_INET, SOCK_DGRAM)
     sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     return sock, keep_alive
 
@@ -134,7 +136,7 @@ def main():
 
 
 def extract(message):
-    if len(message) < 3:
+    if len(message) < 2:
         print("Please input in format [IP] [OSPF OR <int: TTL>] [MESSAGE] or <BROADCAST> [MESSAGE]")
         return None
     else:
@@ -142,8 +144,9 @@ def extract(message):
             if message[0].upper() == SUBNET_BROADCAST:
                 message_arg = message[1:]
                 full_message = ' '.join(message_arg)
-                net = ni.ifaddresses('h1-eth0')[ni.AF_INET][0]['netmask']
-                return make_packet(ROUTER_ADDRESS, net, 200, SUBNET_BROADCAST, full_message)
+                # net = ni.ifaddresses('h1-eth0')[ni.AF_INET][0]['netmask']
+
+                return make_packet(ROUTER_ADDRESS, HOST_ADDRESS, 200, SUBNET_BROADCAST, full_message)
             elif message[1].upper() == OSPF:
                 ip = message[0]
                 message_arg = message[2:]
