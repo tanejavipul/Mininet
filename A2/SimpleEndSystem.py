@@ -142,7 +142,8 @@ def extract(message):
             if message[0].upper() == SUBNET_BROADCAST:
                 message_arg = message[1:]
                 full_message = ' '.join(message_arg)
-                return make_packet(ROUTER_ADDRESS, HOST_ADDRESS, 200, SUBNET_BROADCAST, full_message)
+                net = ni.ifaddresses('h1-eth0')[ni.AF_INET][0]['netmask']
+                return make_packet(ROUTER_ADDRESS, net, 200, SUBNET_BROADCAST, full_message)
             elif message[1].upper() == OSPF:
                 ip = message[0]
                 message_arg = message[2:]

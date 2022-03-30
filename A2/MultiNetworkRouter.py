@@ -64,6 +64,8 @@ def eth_thread(eth, address):
             if data[PROTOCOL] == SUBNET_BROADCAST:
                 dropped = True
                 dest = data[DEST_IP]
+                router = None
+                netmask = None
                 print(dest)
                 for host in HOST_LIST:
                     if host.startswith(dest):
