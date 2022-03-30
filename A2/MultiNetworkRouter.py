@@ -76,7 +76,7 @@ def eth_thread(eth, address):
                 print(dest)
                 for host in HOST_LIST:
                     temp = int(ipaddress.ip_address(host))
-                    print("host: " + str(host) + "   " + str((temp & netmask) == network))
+                    # print("host: " + str(host) + "   " + str((temp & netmask) == network))
                     if (temp & netmask) == network:
                         if not host == data[SOURCE_IP]:
                             s.sendto(convert_to_json(data), (HOST_LIST[host][ADDRESS], HOST_LIST[host][PORT]))
