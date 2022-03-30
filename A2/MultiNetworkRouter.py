@@ -59,8 +59,6 @@ def eth_thread(eth, address):
             data = convert_to_dict(packet_data)
             dropped = False
 
-            # FIXME CHECK WITH PROF IF DELAY NEED BETWEEN INTERFACES
-            # TODO fix delays
             if data[DEST_IP] not in HOST_LIST:
                 update_TTL(data)
                 update_DELAY(data, DELAY)
