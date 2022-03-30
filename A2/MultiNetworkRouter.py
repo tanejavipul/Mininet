@@ -245,6 +245,8 @@ def get_command_input():
             print("DELAY: " + str(DELAY))
         elif message == PRINT_TOPOLOGY:
             print("TOPOLOGY: " + str(TOPOLOGY.vertices))
+        elif message == PRINT_SMALL_TOPOLOGY:
+            print("SMALL TOPOLOGY: \n" + "LINKS: " + str(TOPOLOGY.pred) + "\nDISTANCES: " + str(TOPOLOGY.dist))
         else:
             if SET_DELAY in message:
                 try:
@@ -252,14 +254,15 @@ def get_command_input():
                     DELAY = new_delay
                     for neigh in NEIGHBORS:
                         NEIGHBORS[neigh] = DELAY
+                    print("SUCCESSFULLY SET DELAY TO " + str(DELAY))
                 except:
                     print("INVALID COMMAND")
                     print(
-                        "VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'PRINT TOPOLOGY', 'SET DELAY <int>'")
+                        "VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'PRINT TOPOLOGY', 'PRINT SMALL TOPOLOGY', 'SET DELAY <int>'")
 
             else:
                 print("INVALID COMMAND")
-                print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'PRINT TOPOLOGY', 'SET DELAY <int>'")
+                print("VALID COMMAND LIST: 'PRINT FORWARD TABLE', 'PRINT NEIGHBORS', 'PRINT NAT', 'PRINT TOPOLOGY', 'PRINT SMALL TOPOLOGY', 'SET DELAY <int>'")
 
 
 if __name__ == "__main__":
