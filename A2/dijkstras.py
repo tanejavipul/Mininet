@@ -115,27 +115,29 @@ def dijkstra(G, start, end=None):
         assert pred == {'b': 'a', 'c': 'b', 'd': 'c'}
 
     '''
-    inf = float('inf')
-    D = {start: 0}  # mapping of nodes to their dist from start
-    Q = PQDict(D)  # priority queue for tracking min shortest path
-    P = {}  # mapping of nodes to their direct predecessors
-    U = set(G.keys())  # unexplored nodes
+    try:
+        inf = float('inf')
+        D = {start: 0}  # mapping of nodes to their dist from start
+        Q = PQDict(D)  # priority queue for tracking min shortest path
+        P = {}  # mapping of nodes to their direct predecessors
+        U = set(G.keys())  # unexplored nodes
 
-    while U:  # nodes yet to explore
-        (v, d) = Q.popitem()  # node w/ min dist d on frontier
-        D[v] = d  # est dijkstra greedy score
-        U.remove(v)  # remove from unexplored
-        if v == end: break
+        while U:  # nodes yet to explore
+            (v, d) = Q.popitem()  # node w/ min dist d on frontier
+            D[v] = d  # est dijkstra greedy score
+            U.remove(v)  # remove from unexplored
+            if v == end: break
 
-        # now consider the edges from v with an unexplored head -
-        # we may need to update the dist of unexplored successors
-        for w in G[v]:  # successors to v
-            if w in U:  # then w is a frontier node
-                d = D[v] + G[v][w]  # dgs: dist of start -> v -> w
-                if d < Q.get(w, inf):
-                    Q[w] = d  # set/update dgs
-                    P[w] = v  # set/update predecessor
-
+            # now consider the edges from v with an unexplored head -
+            # we may need to update the dist of unexplored successors
+            for w in G[v]:  # successors to v
+                if w in U:  # then w is a frontier node
+                    d = D[v] + G[v][w]  # dgs: dist of start -> v -> w
+                    if d < Q.get(w, inf):
+                        Q[w] = d  # set/update dgs
+                        P[w] = v  # set/update predecessor
+    except:
+        return None, None
     return D, P
 
 

@@ -96,11 +96,12 @@ def eth_thread(eth, address):
                 else:
                     if data[PROTOCOL] == PROTOCOL_OSPF:
                         print("INSIDE OSPFF")
-                        next = TOPOLOGY.shortest_path_next(ROUTER_ADDRESS, dest)
-                        print("NEXT: " + str(next))
-                        if next is not None:
+                        next_node = TOPOLOGY.fast_shortest_path(ROUTER_ADDRESS, dest)[0]
+                        print("NEXT: " + str(next_node))
+                        # TODO FIX
+                        if next_node is not None:
                             found = True
-                            s.sendto(convert_to_json(data), (next, ROUTER_PORT))
+                            s.sendto(convert_to_json(data), (next_node, ROUTER_PORT))
                     else:
                         for key in FORWARD_TABLE:
                             if dest in FORWARD_TABLE[key][HOSTS]:
@@ -170,6 +171,7 @@ def broadcast_recv_thread():
                     sock.sendto(monitor_packet, ("255.255.255.255", BROADCAST_PORT))
             if data[TYPE] == MONITOR_TOPO:
                 TOPOLOGY.vertices = data[STR_NEIGHBORS]
+                TOPOLOGY.all_shortest_paths(ROUTER_ADDRESS)
 
 
 # For sending forward table to neighbors
