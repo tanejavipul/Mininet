@@ -15,6 +15,7 @@ G = Graph()
 INTERFACES = []
 ROUTER_KEEP_ALIVE = {}
 UPDATE = False
+ROUTER_LIST = []
 
 def broadcast_setup(ip):
     s = socket(AF_INET, SOCK_DGRAM)
@@ -29,6 +30,7 @@ def broadcast_recv_thread():
     print("Broadcast Receiving Thread Started")
     global G
     global UPDATE
+    global ROUTER_LIST
 
     s_recv = socket(AF_INET, SOCK_DGRAM)
     s_recv.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
@@ -40,6 +42,8 @@ def broadcast_recv_thread():
         try:
             data = convert_to_dict(data)
             if data[TYPE] == MONITOR_RESPONSE:
+                if data[ROUTER_INTERFACE] not in ROUTER_LIST:
+                    ROUTER_LIST.append(data[ROUTER_INTERFACE])
                 router = data[ROUTER_INTERFACE]
                 neighbors = data[STR_NEIGHBORS]
                 # print("OUTPUT: ", (data, address), router, neighbors)
@@ -59,6 +63,7 @@ def broadcast_recv_thread():
 def broadcast_send_thread():
     global G
     global UPDATE
+    global ROUTER_LIST
 
     print("Broadcast Sending Thread Started")
     sock_list = []
@@ -70,10 +75,16 @@ def broadcast_send_thread():
     while True:
         for sock in sock_list:
             sock.sendto(req, ("255.255.255.255", BROADCAST_PORT))
-        time.sleep(4)
+        time.sleep(1)
 
 
         topo = monitor_topo(G.vertices)
+        for router in ROUTER_LIST:
+            try:
+                dist, path = dijkstra(G.vertices, router)
+                topo[router] = path
+            except:
+                print("ERROR: SENDING")
         topo = convert_to_json(topo)
         if UPDATE:
             for sock in sock_list:

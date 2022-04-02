@@ -177,7 +177,12 @@ def broadcast_recv_thread():
                     sock.sendto(monitor_packet, ("255.255.255.255", BROADCAST_PORT))
             if data[TYPE] == MONITOR_TOPO:
                 TOPOLOGY.vertices = data[STR_NEIGHBORS]
-                TOPOLOGY.all_shortest_paths(ROUTER_ADDRESS)
+                if ROUTER_ADDRESS in data:
+                    print("got from packet")
+                    TOPOLOGY.pred = data[ROUTER_ADDRESS]
+                else:
+                    print("calcualted")
+                    TOPOLOGY.all_shortest_paths(ROUTER_ADDRESS)
 
 
 # For sending forward table to neighbors
@@ -239,7 +244,7 @@ def get_command_input():
     while True:
         message = sys.stdin.readline()
         message = message.strip().upper()
-        if message == PRINT_NAT:
+        if message == PRINT_HOSTS:
             print("NAT: " + str(HOST_LIST))
         elif message == PRINT_FORWARD_TABLE:
             print("FORWARD: " + str(FORWARD_TABLE))
@@ -248,9 +253,7 @@ def get_command_input():
         elif message == PRINT_DELAY:
             print("DELAY: " + str(DELAY))
         elif message == PRINT_TOPOLOGY:
-            print("TOPOLOGY: " + str(TOPOLOGY.vertices))
-        elif message == PRINT_SMALL_TOPOLOGY:
-            print("SMALL TOPOLOGY: \n" + "LINKS: " + str(TOPOLOGY.pred) + "\nDISTANCES: " + str(TOPOLOGY.dist))
+            print("TOPOLOGY: \n" + "LINKS: " + str(TOPOLOGY.pred) + "\nDISTANCES: " + str(TOPOLOGY.dist))
         else:
             if SET_DELAY in message:
                 try:
