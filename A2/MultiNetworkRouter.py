@@ -178,10 +178,8 @@ def broadcast_recv_thread():
             if data[TYPE] == MONITOR_TOPO:
                 TOPOLOGY.vertices = data[STR_NEIGHBORS]
                 if ROUTER_ADDRESS in data:
-                    print("got from packet")
                     TOPOLOGY.pred = data[ROUTER_ADDRESS]
                 else:
-                    print("calcualted")
                     TOPOLOGY.all_shortest_paths(ROUTER_ADDRESS)
 
 
