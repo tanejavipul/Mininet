@@ -37,7 +37,7 @@ def broadcast_recv_thread():
     s_recv.bind(('255.255.255.255', BROADCAST_PORT))
 
     while True:
-        data, address = s_recv.recvfrom(4096)
+        data, address = s_recv.recvfrom(6000)
 
         try:
             data = convert_to_dict(data)
