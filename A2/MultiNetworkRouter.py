@@ -101,7 +101,6 @@ def eth_thread(eth, address):
             #       -->  SCENARIO 3.1 DEST IP IN ANOTHER ROUTER
                 else:
                     if data[PROTOCOL] == PROTOCOL_OSPF:
-                        print("INSIDE OSPFF")
                         next_node = TOPOLOGY.fast_shortest_path(ROUTER_ADDRESS, dest)[0]
                         print("NEXT: " + str(next_node))
                         # TODO FIX
@@ -118,7 +117,6 @@ def eth_thread(eth, address):
                     print("ERROR: PACKET DROPPED - DESTINATION NOT FOUND")
         except :
             print("ERROR: POTENTIAL PACKET DROP")
-            # print("EXCEPTION: " + str(e))
 
 
 
@@ -238,6 +236,7 @@ def get_command_input():
     global FORWARD_TABLE
     global HOST_LIST
     global DELAY
+    global TOPOLOGY
     global NEIGHBORS
     while True:
         message = sys.stdin.readline()
