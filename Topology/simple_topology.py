@@ -3,7 +3,7 @@
 
 
 """
-simple_topo.py: Example network with Linux IP router
+simple_topology.py: Example network with Linux IP router
 
 This example converts a Node into a router using IP forwarding
 already built into Linux.

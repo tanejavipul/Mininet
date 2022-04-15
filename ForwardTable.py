@@ -3,8 +3,6 @@ import json
 from Packets import *
 
 
-
-
 def monitor_request():
     return {TYPE: MONITOR_REQUEST}
 
@@ -12,8 +10,11 @@ def monitor_request():
 def monitor_response(router_ip, neighbors):
     return {TYPE: MONITOR_RESPONSE, ROUTER_INTERFACE: router_ip, STR_NEIGHBORS: neighbors}
 
+
 def monitor_topo(topo):
     return {TYPE: MONITOR_TOPO, STR_NEIGHBORS: topo}
+
+
 # broadcast a message to neighbouring routers with the destinations that you can reach and the distance within which
 # you can reach them
 def advertise(forward_table, interface, neighbor):
@@ -26,7 +27,8 @@ def update(cur: dict, update: dict):
     for key in recv_table:
         if key in cur:
             # if hop count lower than update or send_to field same then copy hosts and update hops and send_to field
-            if int(cur[key][HOPS]) > int(recv_table[key][HOPS])+1 or cur[key][SEND_TO] == update[FROM]: # or int(recv_table[key][HOPS]) == 0: # same router but differnt eth
+            if int(cur[key][HOPS]) > int(recv_table[key][HOPS]) + 1 or cur[key][SEND_TO] == update[
+                FROM]:  # or int(recv_table[key][HOPS]) == 0: # same router but differnt eth
                 cur[key][HOPS] = int(recv_table[key][HOPS]) + 1
                 cur[key][SEND_TO] = update[FROM]
                 cur[key][HOSTS] = recv_table[key][HOSTS]
