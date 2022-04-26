@@ -1,13 +1,5 @@
 # Mininet
 
-
-## Steps To Run
-
-First either download mininet on a VM or directly on your machine
-
-> http://mininet.org/
-
-
 **MultiNetworkRouter.py** -> this router automatically binds to it interfaces and send messages to neighboring routers to advertise what the router can connect or send its topology to OSPF node and OSPF will calculate and send each router there fastest routes to other routers.
 
 
@@ -23,6 +15,15 @@ First either download mininet on a VM or directly on your machine
 **Packets.py** -> this is a set of functions which either compile OSPF/RIP packets or updates them like updating the TTL or updating the delays. Packets are converted to json to
 
 Routers can detect disconnects of neighboring routers or host.
+
+
+
+
+## Steps To Run
+
+First either download mininet on a VM or directly on your machine
+
+> http://mininet.org/
 
 
 Then go to Mininet directory
